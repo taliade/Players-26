@@ -10,6 +10,9 @@ public class HUDController : MonoBehaviour
     [SerializeField] GameObject tapToStart;  // cartel "Toca para empezar"
     [SerializeField] GameObject endPanel;
     [SerializeField] TMP_Text endTitle;
+    [SerializeField] GameObject endButtons;  // Reintentar + Menú (se ocultan si pasas de nivel)
+    [SerializeField] string winMessage = "¡Liberaste al conejo!";
+    [SerializeField] string loseMessage = "El monstruo te atrapó";
     [SerializeField] HeartPulse heartPulse;  // ícono de corazón que late al recuperar vida
 
     int lastLives;
@@ -52,6 +55,9 @@ public class HUDController : MonoBehaviour
     void ShowEnd(bool won)
     {
         endPanel.SetActive(true);
-        endTitle.text = won ? "¡Liberaste al conejo!" : "El monstruo te atrapó";
+        endTitle.text = won ? winMessage : loseMessage;
+
+        bool goingToNextLevel = won && GameManager.Instance.HasNextLevel;
+        if (endButtons != null) endButtons.SetActive(!goingToNextLevel);
     }
 }

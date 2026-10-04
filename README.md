@@ -1,6 +1,7 @@
 # Players-26 — Rescate del Conejo (Unity 2D)
 
 Scripts y guía para armar el MVP de la Pre-Entrega. El diseño está en [`GDD.md`](GDD.md).
+**Si es tu primera vez con Unity, empieza por [`GUIA.md`](GUIA.md)**: paso a paso, glosario y modos de juego.
 
 > El proyecto Unity se crea en tu PC. Este repo trae los scripts: copia `Assets/Scripts` dentro de la carpeta `Assets` de tu proyecto.
 
@@ -9,7 +10,7 @@ Scripts y guía para armar el MVP de la Pre-Entrega. El diseño está en [`GDD.m
 2. Copia las carpetas `Assets/Scripts` y `Assets/Editor` de este repo dentro de `Assets` de tu proyecto.
    **Ojo:** si modificaste los scripts a mano, compáralos antes de pisarlos.
 3. *Window → TextMeshPro → Import TMP Essential Resources*.
-4. Menú **Rescate → 1. Generar escenas**. Crea `Menu` y `Juego` con todo conectado y las agrega a Build Profiles (Menu = 0, Juego = 1). **Reemplaza la lista de escenas que tuvieras antes.**
+4. Menú **Rescate → 1. Generar escenas**. Crea `Menu`, `Nivel1_Jugueteria` (3 llaves) y `Nivel2_Calle` (5 llaves, más rápido) con todo conectado y las agrega a Build Profiles en ese orden. **Reemplaza la lista de escenas que tuvieras antes.**
 5. Abre la escena `Menu` y dale Play.
 6. Menú **Rescate → 2. Build Windows (.exe)** → `Builds/Windows/RescateDelConejo.exe`. Entrega la carpeta **completa**.
 7. Si quieres Android: instala *Android Build Support* desde Unity Hub. **iOS no es posible sin Mac.**
@@ -19,7 +20,8 @@ Scripts y guía para armar el MVP de la Pre-Entrega. El diseño está en [`GDD.m
 |---|---|
 | `Assets/Art/Chica/Idle` y `Assets/Art/Chica/Run` | Cuadros de animación (`idle_0.png`, `idle_1.png`… o una hoja recortada) |
 | `Assets/Art/Monstruo`, `Assets/Art/Conejo` | Cuadros (2 o más = animación en loop) |
-| `Assets/Art/Llave`, `Corazon`, `Regalo`, `Fondo` | Un sprite cada una |
+| `Assets/Art/Llave`, `Corazon`, `Regalo` | Un sprite cada una |
+| `Assets/Art/Fondo/Jugueteria`, `Assets/Art/Fondo/Calle` | Un fondo cada una (si están vacías: baldosas a cuadros y adoquines generados) |
 | `Assets/Audio/musica`, `golpe`, `llave`, `corazon`, `regalo`, `pasos` | `.wav`, `.ogg` o `.mp3` con **ese nombre exacto** |
 
 Si falta algo, el generador usa formas de colores y animaciones de rebote, y te dice qué reemplazó.

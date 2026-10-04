@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 // Escena Menú: botones Jugar y Salir.
 public class MenuController : MonoBehaviour
 {
-    [SerializeField] string gameScene = "Juego";
+    [SerializeField] string gameScene = "Nivel1_Jugueteria";
 
     public void Play()
     {

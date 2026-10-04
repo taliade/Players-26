@@ -11,6 +11,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] int maxLives = 3;
     [SerializeField] int keysToWin = 5;
 
+    [Header("Nivel")]
+    [SerializeField] string nextScene = "";       // vacío = último nivel. Ej: "Nivel2_Calle"
+    [SerializeField] float nextSceneDelay = 2f;   // segundos mostrando el mensaje antes de cambiar
+
     public int Lives { get; private set; }
     public int Keys { get; private set; }
     public int Gifts { get; private set; }
@@ -18,6 +22,7 @@ public class GameManager : MonoBehaviour
     public int KeysToWin => keysToWin;
     public bool IsPlaying { get; private set; }
     public bool IsOver { get; private set; }
+    public bool HasNextLevel => !string.IsNullOrEmpty(nextScene);
 
     public event Action Changed;       // algo cambió: el HUD se redibuja
     public event Action<bool> Ended;   // true = liberaste al conejo
@@ -70,6 +75,17 @@ public class GameManager : MonoBehaviour
         IsOver = true;
         IsPlaying = false;
         Ended?.Invoke(won);
+
+        // Condicional: si ganaste y hay otro nivel, pasa solo después de unos segundos.
+        if (won && HasNextLevel)
+        {
+            Invoke(nameof(LoadNextLevel), nextSceneDelay);
+        }
+    }
+
+    void LoadNextLevel()
+    {
+        SceneManager.LoadScene(nextScene);
     }
 
     // Va conectado al OnClick del botón "Reintentar".

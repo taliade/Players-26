@@ -13,7 +13,7 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 // Menú "Rescate" en la barra de Unity:
-//   1. Generar escenas  -> crea Menu.unity y Juego.unity con todo conectado y las agrega a Build Profiles.
+//   1. Generar escenas  -> crea Menu, Nivel1_Jugueteria y Nivel2_Calle con todo conectado y las agrega a Build Profiles.
 //   2. Build Windows    -> genera el .exe en la carpeta Builds/Windows.
 //
 // Usa tu arte si lo pones en Assets/Art/<carpeta>. Si una carpeta está vacía, usa formas de colores.
@@ -29,12 +29,15 @@ public static class SceneBuilder
     const string AudioDir = "Assets/Audio";
     const string ScenesDir = "Assets/Scenes";
     const string MenuScenePath = ScenesDir + "/Menu.unity";
-    const string GameScenePath = ScenesDir + "/Juego.unity";
+    const string Level1Name = "Nivel1_Jugueteria";
+    const string Level2Name = "Nivel2_Calle";
+    const string Level1Path = ScenesDir + "/" + Level1Name + ".unity";
+    const string Level2Path = ScenesDir + "/" + Level2Name + ".unity";
     const string ExePath = "Builds/Windows/RescateDelConejo.exe";
 
     static readonly string[] ArtFolders =
     {
-        "Chica/Idle", "Chica/Run", "Monstruo", "Conejo", "Llave", "Corazon", "Regalo", "Fondo"
+        "Chica/Idle", "Chica/Run", "Monstruo", "Conejo", "Llave", "Corazon", "Regalo", "Fondo/Jugueteria", "Fondo/Calle"
     };
 
     static readonly float[] LaneY = { 2f, 0f, -2f };
@@ -44,7 +47,7 @@ public static class SceneBuilder
 
     // ------------------------------------------------------------------ menú
 
-    [MenuItem("Rescate/1. Generar escenas (Menu + Juego)")]
+    [MenuItem("Rescate/1. Generar escenas (Menu + 2 niveles)")]
     static void GenerateAll()
     {
         if (Resources.Load<TMP_Settings>("TMP Settings") == null)
@@ -55,9 +58,9 @@ public static class SceneBuilder
             return;
         }
 
-        bool exists = File.Exists(MenuScenePath) || File.Exists(GameScenePath);
+        bool exists = File.Exists(MenuScenePath) || File.Exists(Level1Path) || File.Exists(Level2Path);
         if (exists && !EditorUtility.DisplayDialog("Regenerar escenas",
-                "Ya existen Menu.unity y/o Juego.unity en Assets/Scenes.\nSe van a REEMPLAZAR (los cambios hechos a mano en esas escenas se pierden).\n\n¿Continuar?",
+                "Ya existen escenas del juego en Assets/Scenes (Menu / Nivel1_Jugueteria / Nivel2_Calle).\nSe van a REEMPLAZAR (los cambios hechos a mano en esas escenas se pierden).\n\n¿Continuar?",
                 "Sí, regenerar", "Cancelar"))
         {
             return;
@@ -72,24 +75,50 @@ public static class SceneBuilder
         var assets = new GameAssets();
         assets.Load();
 
-        BuildGameScene(assets);
+        assets.MakePrefabs();
+
+        BuildGameScene(assets, new Level
+        {
+            Path = Level1Path,
+            Title = "NIVEL 1: LA JUGUETERÍA",
+            Keys = 3,
+            StartInterval = 1.5f,
+            Next = Level2Name,
+            WinMessage = "¡Abriste la puerta!\nEl monstruo huyó a la calle...",
+            Background = assets.BgToy,
+            Tile = assets.ToyTile,
+            CameraColor = new Color(0.45f, 0.25f, 0.2f),
+        });
+        BuildGameScene(assets, new Level
+        {
+            Path = Level2Path,
+            Title = "NIVEL 2: LA CALLE",
+            Keys = 5,
+            StartInterval = 1.1f,
+            Next = "",
+            WinMessage = "¡Liberaste al conejo!",
+            Background = assets.BgStreet,
+            Tile = assets.StreetTile,
+            CameraColor = new Color(0.2f, 0.22f, 0.28f),
+        });
         BuildMenuScene(assets);
 
         EditorBuildSettings.scenes = new[]
         {
             new EditorBuildSettingsScene(MenuScenePath, true),
-            new EditorBuildSettingsScene(GameScenePath, true),
+            new EditorBuildSettingsScene(Level1Path, true),
+            new EditorBuildSettingsScene(Level2Path, true),
         };
 
-        EditorSceneManager.OpenScene(GameScenePath);
+        EditorSceneManager.OpenScene(MenuScenePath);
         AssetDatabase.SaveAssets();
 
         string summary = report.Count == 0
             ? "Se usó todo tu arte y audio."
             : "Usando reemplazos para:\n- " + string.Join("\n- ", report);
-        Debug.Log("[Rescate] Escenas generadas: Menu (0) y Juego (1), ya agregadas a Build Profiles.\n" + summary);
+        Debug.Log("[Rescate] Escenas generadas: Menu (0), Nivel1_Jugueteria (1) y Nivel2_Calle (2), ya agregadas a Build Profiles.\n" + summary);
         EditorUtility.DisplayDialog("Listo",
-            "Escenas Menu y Juego generadas y agregadas a Build Profiles.\n\n" + summary +
+            "Escenas Menu, Nivel1_Jugueteria y Nivel2_Calle generadas y agregadas a Build Profiles.\n\n" + summary +
             "\n\nDale Play desde la escena Menu para probar el recorrido completo.", "OK");
     }
 
@@ -139,19 +168,21 @@ public static class SceneBuilder
 
     // ------------------------------------------------------------------ escenas
 
-    static void BuildGameScene(GameAssets a)
+    class Level
+    {
+        public string Path, Title, Next, WinMessage;
+        public int Keys;
+        public float StartInterval;
+        public Sprite Background, Tile;
+        public Color CameraColor;
+    }
+
+    static void BuildGameScene(GameAssets a, Level lv)
     {
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        Camera cam = CreateCamera();
-        CreateBackground(a);
-
-        // Prefabs que instancia el Spawner
-        GameObject monster = MakeItemPrefab("Monstruo", ItemKind.Monster, a.Monster, new Color(0.25f, 0.45f, 1f), 1.4f, true, a.MonsterAnim, a);
-        GameObject key = MakeItemPrefab("Llave", ItemKind.Key, a.Key, new Color(1f, 0.85f, 0.1f), 0.8f, false, null, a);
-        GameObject heart = MakeItemPrefab("Corazon", ItemKind.Heart, a.Heart, new Color(1f, 0.2f, 0.3f), 0.8f, false, null, a);
-        GameObject gift = MakeItemPrefab("Regalo", ItemKind.Gift, a.Gift, new Color(0.7f, 0.3f, 1f), 0.8f, true, null, a);
-        GameObject confetti = MakeConfettiPrefab();
+        Camera cam = CreateCamera(lv.CameraColor);
+        CreateBackground(a, lv.Background, lv.Tile);
 
         // Conejo enjaulado: el objeto con animación en loop
         var rabbit = NewSprite("Conejo", a.Rabbit, a.RabbitTint, 1.2f, -1, a);
@@ -193,20 +224,23 @@ public static class SceneBuilder
         Set(th, "heartSfx", a.HeartClip);
         Set(th, "giftSfx", a.GiftClip);
         Set(th, "body", player.GetComponent<SpriteRenderer>());
-        Set(th, "confettiPrefab", confetti);
+        Set(th, "confettiPrefab", a.ConfettiPrefab);
 
         // GameManager
         var gmGo = new GameObject("GameManager");
         var gm = gmGo.AddComponent<GameManager>();
+        SetInt(gm, "keysToWin", lv.Keys);
+        SetString(gm, "nextScene", lv.Next);
 
         // Spawner
         var spGo = new GameObject("Spawner");
         var sp = spGo.AddComponent<Spawner>();
         Set(sp, "player", pc);
-        Set(sp, "monsterPrefab", monster);
-        Set(sp, "keyPrefab", key);
-        Set(sp, "heartPrefab", heart);
-        Set(sp, "giftPrefab", gift);
+        Set(sp, "monsterPrefab", a.MonsterPrefab);
+        Set(sp, "keyPrefab", a.KeyPrefab);
+        Set(sp, "heartPrefab", a.HeartPrefab);
+        Set(sp, "giftPrefab", a.GiftPrefab);
+        SetFloat(sp, "startInterval", lv.StartInterval);
 
         CreateMusic(a);
 
@@ -221,22 +255,24 @@ public static class SceneBuilder
         var lives = NewText("TextoVidas", canvas, "Vidas: 3/3", 52, TextAlignmentOptions.Left);
         Place(lives.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(130, -32), new Vector2(500, 80));
 
-        var keys = NewText("TextoLlaves", canvas, "Llaves: 0/5", 52, TextAlignmentOptions.Center);
+        var keys = NewText("TextoLlaves", canvas, $"Llaves: 0/{lv.Keys}", 52, TextAlignmentOptions.Center);
         Place(keys.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -32), new Vector2(600, 80));
 
         var gifts = NewText("TextoRegalos", canvas, "Regalos: 0", 52, TextAlignmentOptions.Right);
         Place(gifts.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -32), new Vector2(500, 80));
 
-        var tap = NewText("TocaParaEmpezar", canvas, "Toca la pantalla o usa las flechas para empezar", 64, TextAlignmentOptions.Center);
-        Place(tap.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600, 200));
+        var tap = NewText("TocaParaEmpezar", canvas, $"{lv.Title}\n<size=48>Toca la pantalla o usa las flechas para empezar</size>", 72, TextAlignmentOptions.Center);
+        Place(tap.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1700, 320));
 
         // Panel de fin
         var panel = NewImage("PanelFin", canvas, null, new Color(0f, 0f, 0f, 0.75f));
         Stretch(panel.rectTransform);
-        var title = NewText("Titulo", panel.transform, "¡Liberaste al conejo!", 96, TextAlignmentOptions.Center);
-        Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 140), new Vector2(1600, 180));
-        NewButton("BotonReintentar", panel.transform, "Reintentar", new Vector2(0, -60), gm.Restart);
-        NewButton("BotonMenu", panel.transform, "Menú", new Vector2(0, -200), gm.GoToMenu);
+        var title = NewText("Titulo", panel.transform, lv.WinMessage, 88, TextAlignmentOptions.Center);
+        Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 150), new Vector2(1700, 260));
+        var buttons = NewUI("Botones", panel.transform);
+        Stretch(buttons);
+        NewButton("BotonReintentar", buttons, "Reintentar", new Vector2(0, -60), gm.Restart);
+        NewButton("BotonMenu", buttons, "Menú", new Vector2(0, -200), gm.GoToMenu);
 
         var hud = canvas.gameObject.AddComponent<HUDController>();
         Set(hud, "livesText", lives);
@@ -246,16 +282,18 @@ public static class SceneBuilder
         Set(hud, "endPanel", panel.gameObject);
         Set(hud, "endTitle", title);
         Set(hud, "heartPulse", pulse);
+        Set(hud, "endButtons", buttons.gameObject);
+        SetString(hud, "winMessage", lv.WinMessage);
 
-        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), GameScenePath);
+        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), lv.Path);
     }
 
     static void BuildMenuScene(GameAssets a)
     {
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        CreateCamera();
-        CreateBackground(a);
+        CreateCamera(new Color(0.45f, 0.25f, 0.2f));
+        CreateBackground(a, a.BgToy, a.ToyTile);
 
         // Se agrandan con un padre: la animación de rebote controla la escala del hijo.
         var girl = NewSprite("Sprite", a.GirlIdle, a.GirlTint, 1.4f, 5, a);
@@ -272,6 +310,7 @@ public static class SceneBuilder
         CreateEventSystem();
 
         var menu = canvas.gameObject.AddComponent<MenuController>();
+        SetString(menu, "gameScene", Level1Name);
 
         var title = NewText("Titulo", canvas, "Rescate del Conejo", 120, TextAlignmentOptions.Center);
         Place(title.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(1600, 200));
@@ -284,7 +323,7 @@ public static class SceneBuilder
 
     // ------------------------------------------------------------------ piezas de escena
 
-    static Camera CreateCamera()
+    static Camera CreateCamera(Color background)
     {
         var go = new GameObject("Main Camera");
         go.tag = "MainCamera";
@@ -293,31 +332,38 @@ public static class SceneBuilder
         cam.orthographic = true;
         cam.orthographicSize = CameraSize;
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.18f, 0.35f, 0.15f);
+        cam.backgroundColor = background;
         go.AddComponent<AudioListener>();
         return cam;
     }
 
-    static void CreateBackground(GameAssets a)
+    static void CreateBackground(GameAssets a, Sprite background, Sprite tile)
     {
-        if (a.Background != null)
+        if (background != null)
         {
-            var bg = NewSprite("Fondo", a.Background, Color.white, 1f, -10, a);
-            Vector3 size = a.Background.bounds.size;
+            var bg = NewSprite("Fondo", background, Color.white, 1f, -10, a);
+            Vector3 size = background.bounds.size;
             float scale = Mathf.Max(16f / size.x, CameraSize * 2f / size.y);
             bg.transform.localScale = Vector3.one * scale;
             return;
         }
 
-        // Sin fondo propio: 3 franjas de pasto (los carriles)
-        var lanes = new GameObject("Carriles");
-        for (int i = 0; i < LaneY.Length; i++)
+        // Sin fondo propio: piso con baldosas repetidas (Draw Mode = Tiled) + líneas que marcan los carriles.
+        var floor = new GameObject("Fondo");
+        var sr = floor.AddComponent<SpriteRenderer>();
+        sr.sprite = tile;
+        sr.sharedMaterial = a.SpriteMaterial;
+        sr.drawMode = SpriteDrawMode.Tiled;
+        sr.size = new Vector2(16f, LaneY.Length * 2f);
+        sr.sortingOrder = -10;
+
+        for (int i = 0; i < LaneY.Length - 1; i++)
         {
-            Color c = i % 2 == 0 ? new Color(0.45f, 0.75f, 0.3f) : new Color(0.38f, 0.66f, 0.26f);
-            var stripe = NewSprite($"Carril{i}", a.Square, c, 1f, -10, a);
-            stripe.transform.SetParent(lanes.transform);
-            stripe.transform.position = new Vector3(0f, LaneY[i], 0f);
-            stripe.transform.localScale = new Vector3(16f, 2f, 1f);
+            float y = (LaneY[i] + LaneY[i + 1]) / 2f;
+            var line = NewSprite($"LineaCarril{i}", a.Square, new Color(0f, 0f, 0f, 0.25f), 1f, -9, a);
+            line.transform.SetParent(floor.transform);
+            line.transform.position = new Vector3(0f, y, 0f);
+            line.transform.localScale = new Vector3(16f, 0.08f, 1f);
         }
     }
 
@@ -527,6 +573,27 @@ public static class SceneBuilder
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    static void SetInt(Object target, string field, int value)
+    {
+        var so = new SerializedObject(target);
+        so.FindProperty(field).intValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static void SetFloat(Object target, string field, float value)
+    {
+        var so = new SerializedObject(target);
+        so.FindProperty(field).floatValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static void SetString(Object target, string field, string value)
+    {
+        var so = new SerializedObject(target);
+        so.FindProperty(field).stringValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
     static void PrepareFolders()
     {
         foreach (string dir in new[] { SpritesDir, AnimDir, PrefabsDir, AudioDir, ScenesDir })
@@ -569,10 +636,22 @@ public static class SceneBuilder
         public Sprite Square, Circle;
         public Material SpriteMaterial;
 
-        public Sprite GirlIdle, Monster, Rabbit, Key, Heart, Gift, Background;
+        public Sprite GirlIdle, Monster, Rabbit, Key, Heart, Gift;
         public Color GirlTint, RabbitTint, HeartTint;
         public RuntimeAnimatorController GirlAnim, RabbitAnim, MonsterAnim;
         public AudioClip Music, Hit, KeyClip, HeartClip, GiftClip, Steps;
+        public Sprite BgToy, BgStreet, ToyTile, StreetTile;
+        public GameObject MonsterPrefab, KeyPrefab, HeartPrefab, GiftPrefab, ConfettiPrefab;
+
+        // Prefabs que instancia el Spawner (los mismos para los dos niveles).
+        public void MakePrefabs()
+        {
+            MonsterPrefab = MakeItemPrefab("Monstruo", ItemKind.Monster, Monster, new Color(0.25f, 0.45f, 1f), 1.4f, true, MonsterAnim, this);
+            KeyPrefab = MakeItemPrefab("Llave", ItemKind.Key, Key, new Color(1f, 0.85f, 0.1f), 0.8f, false, null, this);
+            HeartPrefab = MakeItemPrefab("Corazon", ItemKind.Heart, Heart, new Color(1f, 0.2f, 0.3f), 0.8f, false, null, this);
+            GiftPrefab = MakeItemPrefab("Regalo", ItemKind.Gift, Gift, new Color(0.7f, 0.3f, 1f), 0.8f, true, null, this);
+            ConfettiPrefab = MakeConfettiPrefab();
+        }
 
         public void Load()
         {
@@ -597,9 +676,16 @@ public static class SceneBuilder
             Heart = First(LoadSprites("Corazon"), Circle, "Corazón", out bool heartPh);
             HeartTint = heartPh ? new Color(1f, 0.2f, 0.3f) : Color.white;
             Gift = First(LoadSprites("Regalo"), Square, "Regalo", out _);
-            Sprite[] bg = LoadSprites("Fondo");
-            Background = bg.Length > 0 ? bg[0] : null;
-            if (Background == null) report.Add("Fondo: franjas de pasto");
+            Sprite[] toy = LoadSprites("Fondo/Jugueteria");
+            BgToy = toy.Length > 0 ? toy[0] : null;
+            if (BgToy == null) report.Add("Fondo juguetería: baldosas a cuadros");
+            Sprite[] street = LoadSprites("Fondo/Calle");
+            BgStreet = street.Length > 0 ? street[0] : null;
+            if (BgStreet == null) report.Add("Fondo calle: adoquines");
+
+            ToyTile = TileSprite("baldosa_jugueteria", (x, y) =>
+                ((x / 8) + (y / 8)) % 2 == 0 ? new Color32(250, 225, 200, 255) : new Color32(240, 170, 185, 255));
+            StreetTile = TileSprite("adoquines", Cobblestone);
 
             float girlScale = 1.4f / GirlIdle.bounds.size.y;
             float rabbitScale = 1.2f / Rabbit.bounds.size.y;
@@ -693,6 +779,55 @@ public static class SceneBuilder
         ti.textureCompression = TextureImporterCompression.Uncompressed;
         ti.SaveAndReimport();
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // Baldosa de 16x16 px que se repite (para Draw Mode = Tiled).
+    static Sprite TileSprite(string name, System.Func<int, int, Color32> pixel)
+    {
+        string path = $"{SpritesDir}/{name}.png";
+        const int n = 16;
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        var px = new Color32[n * n];
+        for (int y = 0; y < n; y++)
+        for (int x = 0; x < n; x++)
+        {
+            px[y * n + x] = pixel(x, y);
+        }
+        tex.SetPixels32(px);
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+
+        var ti = (TextureImporter)AssetImporter.GetAtPath(path);
+        ti.textureType = TextureImporterType.Sprite;
+        ti.spriteImportMode = SpriteImportMode.Single;
+        ti.spritePixelsPerUnit = 16;
+        ti.filterMode = FilterMode.Point;
+        ti.textureCompression = TextureImporterCompression.Uncompressed;
+        ti.wrapMode = TextureWrapMode.Repeat;
+        var settings = new TextureImporterSettings();
+        ti.ReadTextureSettings(settings);
+        settings.spriteMeshType = SpriteMeshType.FullRect;   // necesario para Tiled
+        ti.SetTextureSettings(settings);
+        ti.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // Adoquines: piedras de 8x8 con junta oscura, una fila corrida respecto de la otra.
+    static Color32 Cobblestone(int x, int y)
+    {
+        int row = y / 8;
+        int lx = (x + (row % 2) * 4) % 8;
+        int ly = y % 8;
+        bool joint = lx == 0 || ly == 0;
+        bool corner = (lx == 1 || lx == 7) && (ly == 1 || ly == 7);
+        if (joint || corner) return new Color32(70, 72, 80, 255);
+
+        int stone = ((x + (row % 2) * 4) / 8) * 7 + row * 13;
+        byte shade = (byte)(140 + (stone * 37) % 40);
+        bool light = lx <= 2 && ly >= 5;   // brillo arriba a la izquierda de cada piedra
+        return light ? new Color32((byte)(shade + 25), (byte)(shade + 25), (byte)(shade + 30), 255)
+                     : new Color32(shade, shade, (byte)(shade + 6), 255);
     }
 
     // Material sin luces: los sprites se ven siempre, aunque la escena no tenga Light 2D.

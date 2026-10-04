@@ -43,11 +43,14 @@ Una chica esquiva en tres carriles a los monstruos azules que avanzan como zombi
 Las llaves, los corazones y los regalos son **objetos**, no personajes.
 
 ## Escenas
-1. **Juego** — una única escena con: cartel "Toca para empezar", la partida y el panel de fin (Ganaste/Perdiste + Reintentar).
-2. Menú — **fuera del MVP**. Agregarlo solo si sobra tiempo y la consigna lo pide.
+1. **Menú** — título, Jugar y Salir.
+2. **Nivel 1: La juguetería** — piso de baldosas. 3 llaves abren la puerta; el monstruo huye a la calle con el conejo.
+3. **Nivel 2: La calle** — adoquines, más rápido. 5 llaves liberan al conejo.
+
+Cada nivel empieza con 3 vidas. Al perder: Reintentar o Menú.
 
 ## Fuera del MVP (recortado a propósito)
-Menú, niveles, récord guardado, power-ups, partículas, animación de muerte, ataque del jugador.
+Récord guardado, modo contra la PC, multijugador local (ver `GUIA.md`, Parte 5), power-ups, partículas, animación de muerte, ataque del jugador.
 
 ## Prioridad de recorte si falta tiempo
 Los **regalos** se recortan primero: no cambian ninguna decisión del jugador.
