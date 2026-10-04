@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Rescate del Conejo: arcade pixel de 3 carriles hecho en Unity 2D. Jugá el prototipo.">
+<title>Rescate del Conejo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: héroe a dos columnas (texto neón | escenario con la chica y el conejo) sobre un cielo de estrellas con humo; debajo, el gabinete arcade interactivo, la galería de pantallas animadas y los niveles. */
+:root {
+  --midnight: #0d0b2a;
+  --indigo: #1a1650;
+  --panel: #221d63;
+  --ink: #f5f2ff;
+  --muted: #b9b3e6;
+  --pink: #ff6ec7;
+  --cyan: #4ff3ff;
+  --yellow: #ffe94a;
+  --baby: #9fd8ff;
+  --heart: #ff4d6d;
+  --line: rgba(160, 150, 255, 0.28);
+  --font-pixel: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  --font-body: "Rubik", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--midnight); color: var(--ink); }
+body { margin: 0; font-family: var(--font-body); font-size: 17px; line-height: 1.55; overflow-x: hidden; }
+a { color: var(--cyan); }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.smoke { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.puff {
+  position: absolute; border-radius: 50%; filter: blur(42px); opacity: 0.5; mix-blend-mode: screen;
+  animation: drift var(--dur, 38s) ease-in-out infinite alternate;
+}
+@keyframes drift {
+  0%   { transform: translate3d(-8vw, 0, 0) scale(1); }
+  50%  { transform: translate3d(6vw, -4vh, 0) scale(1.18); }
+  100% { transform: translate3d(14vw, 3vh, 0) scale(0.92); }
+}
+.scan { position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0 1px, transparent 1px 3px); }
+
+.wrap { position: relative; z-index: 3; max-width: 1180px; margin: 0 auto; padding-inline: 20px; }
+
+/* ---------- barra superior ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px; }
+.brand { font-family: var(--font-pixel); font-size: 11px; color: var(--yellow); text-decoration: none; letter-spacing: 0.04em; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.nav a, .chipbtn {
+  font-family: var(--font-pixel); font-size: 10px; color: var(--ink); text-decoration: none;
+  padding: 10px 12px; border-radius: 6px; background: rgba(34, 29, 99, 0.7); border: 2px solid var(--line); cursor: pointer;
+}
+.nav a:hover, .chipbtn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* ---------- héroe ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 28px; align-items: center; padding-block: 18px 60px; }
+@media (max-width: 880px) { .hero { grid-template-columns: 1fr; } }
+.pitch { display: grid; gap: 20px; min-width: 0; }
+h1.logo { margin: 0; font-family: var(--font-pixel); font-size: clamp(30px, 6.2vw, 64px); line-height: 1.12; letter-spacing: 0.02em; }
+.logo span { display: block; }
+.logo .l1 { color: var(--pink); text-shadow: 0 0 6px var(--pink), 0 0 22px rgba(255, 110, 199, 0.7), 4px 4px 0 #3b0f3f; animation: flick 6s infinite; }
+.logo .l2 { color: var(--cyan); text-shadow: 0 0 6px var(--cyan), 0 0 22px rgba(79, 243, 255, 0.7), 4px 4px 0 #0b3550; animation: flick 7.5s 1.2s infinite; }
+@keyframes flick { 0%, 92%, 100% { opacity: 1; } 93% { opacity: 0.35; } 94% { opacity: 1; } 96% { opacity: 0.55; } 97% { opacity: 1; } }
+.slogan { margin: 0; font-family: var(--font-pixel); font-size: clamp(15px, 2.4vw, 24px); line-height: 1.45; color: #fff; text-shadow: 0 0 14px rgba(159, 216, 255, 0.8); }
+.lede { margin: 0; font-size: 18px; color: var(--muted); max-width: 42ch; }
+.feats { display: grid; gap: 10px; max-width: 420px; }
+.feat { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 10px; border: 2px solid rgba(79, 243, 255, 0.45);
+  background: rgba(26, 22, 80, 0.72); box-shadow: inset 0 0 18px rgba(79, 243, 255, 0.12); font-weight: 700;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s; }
+.feat:hover { transform: translateX(6px); border-color: var(--cyan); box-shadow: inset 0 0 22px rgba(79, 243, 255, 0.3), 0 0 18px rgba(79, 243, 255, 0.35); }
+.feat canvas { width: 34px; height: 34px; image-rendering: pixelated; flex: none; }
+.cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 16px; justify-self: start;
+  padding: 20px 30px; border-radius: 16px; text-decoration: none; font-family: var(--font-pixel); font-size: clamp(15px, 2vw, 22px);
+  color: var(--yellow); background: rgba(13, 11, 42, 0.85); border: 4px solid var(--yellow);
+  box-shadow: 0 0 0 4px rgba(255, 233, 74, 0.15), 0 0 26px rgba(255, 233, 74, 0.55), inset 0 0 22px rgba(255, 233, 74, 0.25);
+  text-shadow: 0 0 10px rgba(255, 233, 74, 0.8); animation: pulse 2.2s ease-in-out infinite; position: relative;
+}
+.cta:hover { color: #fff; background: rgba(60, 50, 10, 0.6); }
+.cta .spark { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); animation: spin 3s linear infinite; display: inline-block; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(255,233,74,0.15), 0 0 22px rgba(255,233,74,0.45), inset 0 0 18px rgba(255,233,74,0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(255,233,74,0.1), 0 0 44px rgba(255,233,74,0.75), inset 0 0 26px rgba(255,233,74,0.35); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.note { margin: 0; font-size: 14px; color: var(--muted); }
+
+.stage { position: relative; width: 100%; max-width: 520px; aspect-ratio: 4 / 5; justify-self: center; min-width: 0; }
+.stage .glow { position: absolute; inset: 8% 6%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 110, 199, 0.35), rgba(79, 243, 255, 0.18) 55%, transparent); filter: blur(10px); animation: breathe 5s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.08); opacity: 0.8; } }
+.sprite { position: absolute; image-rendering: pixelated; }
+#hero-girl { left: 22%; top: 20%; width: 46%; animation: jump 2.6s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(255, 110, 199, 0.55)); }
+@keyframes jump { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-7%) rotate(3deg); } }
+#hero-rab { right: 2%; top: 14%; width: 26%; animation: float 3.4s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(159, 216, 255, 0.9)); }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12%); } }
+#hero-mon { right: -2%; bottom: 2%; width: 24%; animation: peek 5s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(90, 134, 255, 0.8)); cursor: pointer; }
+@keyframes peek { 0%, 100% { transform: translateY(18%); } 40%, 60% { transform: translateY(0); } }
+.floaty { position: absolute; image-rendering: pixelated; transition: transform 0.2s ease-out; }
+.floaty canvas { width: 100%; height: auto; display: block; animation: bob var(--d, 4s) ease-in-out infinite; image-rendering: pixelated; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(var(--r0, -8deg)); } 50% { transform: translateY(-14px) rotate(var(--r1, 8deg)); } }
+.badge { position: absolute; width: 112px; height: 112px; display: grid; place-items: center; text-align: center;
+  font-weight: 800; font-size: 13px; line-height: 1.2; color: #fff; }
+.badge::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px dashed currentColor; animation: spin 14s linear infinite; }
+.badge span { position: relative; padding: 10px; }
+.b1 { top: -2%; left: -2%; color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+.b2 { bottom: 16%; left: -4%; color: var(--pink); text-shadow: 0 0 8px var(--pink); width: 96px; height: 96px; }
+.b1 span, .b2 span { color: #fff; }
+
+/* ---------- secciones ---------- */
+section { padding-block: 56px; }
+.sec-title { margin: 0 0 8px; font-family: var(--font-pixel); font-size: clamp(16px, 2.6vw, 26px); line-height: 1.4; color: var(--yellow); text-shadow: 0 0 14px rgba(255, 233, 74, 0.55); text-wrap: balance; }
+.sec-lede { margin: 0 0 28px; color: var(--muted); max-width: 60ch; }
+
+/* gabinete arcade */
+.cabinet { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 22px; align-items: stretch;
+  padding: 22px; border-radius: 26px; background: linear-gradient(160deg, #2b2380, #15114a); border: 3px solid var(--line);
+  box-shadow: 0 0 0 6px #0a0822, 0 30px 60px -20px rgba(0,0,0,0.6), 0 0 40px rgba(255,110,199,0.18); }
+@media (max-width: 760px) { .cabinet { grid-template-columns: 1fr; } }
+.crt { position: relative; min-width: 0; border-radius: 22px; padding: 22px; background: #050414; border: 6px solid #0a0822;
+  box-shadow: inset 0 0 60px rgba(79, 243, 255, 0.18), inset 0 0 0 2px rgba(79,243,255,0.2); overflow: hidden; min-height: 360px; outline: none; }
+.crt:focus-visible { box-shadow: inset 0 0 60px rgba(79, 243, 255, 0.3), 0 0 0 3px var(--yellow); }
+.crt::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55)); }
+.crt-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 20px; height: 100%; }
+@media (max-width: 600px) { .crt-grid { grid-template-columns: 1fr; } }
+.crt-head { font-family: var(--font-pixel); font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.crt-head .cred { color: var(--yellow); }
+.menu-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; align-content: start; }
+.menu-list button {
+  width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 14px 12px; border-radius: 6px; cursor: pointer;
+  font-family: var(--font-pixel); font-size: 13px; color: var(--ink); background: transparent; border: 2px solid transparent;
+}
+.menu-list button .arrow { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 10px solid var(--yellow); opacity: 0; }
+.menu-list button.on { color: var(--yellow); border-color: rgba(255, 233, 74, 0.5); background: rgba(255, 233, 74, 0.08); text-shadow: 0 0 10px rgba(255,233,74,0.7); }
+.menu-list button.on .arrow { opacity: 1; animation: blink 0.7s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.screen-out { font-size: 16px; color: var(--ink); display: grid; gap: 12px; align-content: start; min-width: 0; }
+.screen-out h3 { margin: 0; font-family: var(--font-pixel); font-size: 13px; color: var(--cyan); line-height: 1.5; }
+.screen-out p { margin: 0; }
+.screen-out ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.screen-out canvas { width: 100%; aspect-ratio: 16 / 9; image-rendering: pixelated; border-radius: 6px; display: block; }
+.flash { font-family: var(--font-pixel); font-size: 12px; color: var(--heart); animation: blink 0.5s steps(1) 6; }
+.controls { display: grid; gap: 16px; align-content: start; justify-items: center; text-align: center; }
+.slot { width: 100%; display: grid; gap: 10px; justify-items: center; padding: 16px; border-radius: 14px; background: #0a0822; border: 2px solid var(--line); }
+.slot-mouth { width: 70px; height: 14px; border-radius: 8px; background: #000; box-shadow: inset 0 0 0 3px #ff9f1c, 0 0 14px rgba(255,159,28,0.6); }
+.coin-btn { cursor: pointer; padding: 12px 14px; border-radius: 10px; border: 3px solid #ff9f1c; background: #2a1600; color: #ffd28a; font-family: var(--font-pixel); font-size: 10px; line-height: 1.6; }
+.coin-btn:hover { background: #3e2200; }
+.coin { position: fixed; width: 34px; height: 34px; border-radius: 50%; z-index: 50; pointer-events: none;
+  background: radial-gradient(circle at 35% 35%, #fff6b0, #ffd23f 45%, #b88400); box-shadow: 0 0 14px rgba(255,210,63,0.8);
+  display: grid; place-items: center; font-family: var(--font-pixel); font-size: 12px; color: #7a5200; }
+.stick { display: grid; justify-items: center; gap: 4px; }
+.stick .ball { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffb3dd, var(--pink) 55%, #9b1f6a); box-shadow: 0 0 18px rgba(255,110,199,0.6); transition: transform 0.12s; }
+.stick .shaft { width: 10px; height: 34px; background: #888; border-radius: 4px; }
+.stick .base { width: 90px; height: 16px; border-radius: 10px; background: #0a0822; border: 2px solid var(--line); }
+.keys-hint { font-size: 13px; color: var(--muted); }
+.arcade-btns { display: flex; gap: 12px; }
+.abtn { width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer; font-family: var(--font-pixel); font-size: 12px; color: #0a0822; }
+.abtn.a { background: var(--yellow); box-shadow: 0 5px 0 #a39200, 0 0 16px rgba(255,233,74,0.6); }
+.abtn.b { background: var(--cyan); box-shadow: 0 5px 0 #1f8f99, 0 0 16px rgba(79,243,255,0.6); }
+.abtn:active { transform: translateY(4px); box-shadow: none; }
+
+/* galería */
+.gallery { display: grid; gap: 16px; }
+.viewer { position: relative; border-radius: 20px; padding: 14px; background: #0a0822; border: 3px solid var(--line); box-shadow: 0 0 34px rgba(79, 243, 255, 0.18); }
+.viewer canvas { width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 10px; image-rendering: pixelated; }
+.viewer .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; cursor: pointer;
+  background: rgba(13, 11, 42, 0.85); border: 3px solid var(--cyan); color: var(--cyan); font-family: var(--font-pixel); font-size: 16px; display: grid; place-items: center; }
+.viewer .nav-btn:hover { background: var(--cyan); color: #0a0822; }
+.viewer .prev { left: 24px; } .viewer .next { right: 24px; }
+.caption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.caption b { font-family: var(--font-pixel); font-size: 13px; color: var(--pink); }
+.caption span { color: var(--muted); }
+.thumbs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .thumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.thumbs button { padding: 0; border-radius: 8px; border: 3px solid transparent; background: none; cursor: pointer; overflow: hidden; }
+.thumbs button.on { border-color: var(--yellow); box-shadow: 0 0 14px rgba(255,233,74,0.5); }
+.thumbs canvas { width: 100%; aspect-ratio: 16 / 9; display: block; image-rendering: pixelated; }
+
+/* niveles */
+.levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 760px) { .levels { grid-template-columns: 1fr; } }
+.level { border-radius: 18px; padding: 14px; background: rgba(26, 22, 80, 0.8); border: 3px solid var(--line); display: grid; gap: 10px; min-width: 0;
+  transition: transform 0.25s, box-shadow 0.25s; }
+.level:hover { transform: translateY(-6px) rotate(-0.6deg); box-shadow: 0 18px 40px -16px rgba(255,110,199,0.55); }
+.level canvas { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; image-rendering: pixelated; display: block; }
+.level .tag { font-family: var(--font-pixel); font-size: 10px; color: var(--cyan); }
+.level h3 { margin: 0; font-size: 22px; }
+.level p { margin: 0; color: var(--muted); }
+
+footer { position: relative; z-index: 3; border-top: 2px solid var(--line); margin-top: 20px; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 24px 40px; color: var(--muted); font-size: 14px; align-items: center; }
+footer .pill { font-family: var(--font-pixel); font-size: 10px; padding: 10px 14px; border-radius: 8px; border: 2px solid var(--cyan); color: var(--cyan); }
+
+.burst { position: fixed; width: 6px; height: 6px; pointer-events: none; z-index: 60; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="smoke" aria-hidden="true" id="smoke"></div>
+<div class="scan" aria-hidden="true"></div>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#inicio">RESCATE DEL CONEJO</a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#arcade">Menú arcade</a>
+      <a href="#pantallas">Pantallas</a>
+      <a href="#niveles">Niveles</a>
+      <button class="chipbtn" id="snd" type="button" aria-pressed="false">Sonido: no</button>
+    </nav>
+  </header>
+
+  <main id="inicio">
+    <section class="hero" style="padding-top:8px">
+      <div class="pitch">
+        <h1 class="logo"><span class="l1">RESCATE</span><span class="l2">DEL CONEJO</span></h1>
+        <p class="slogan">ENTRA AL<br>MUNDO RETRO</p>
+        <p class="lede">Un arcade pixel de 16 bits sobre valentía, compañía y una carrera para salvar a tu conejo. Esquiva al monstruo azul, junta llaves y cruza la juguetería hasta la calle al atardecer.</p>
+        <div class="feats">
+          <div class="feat"><canvas width="9" height="8" data-sprite="heart"></canvas>Pixel art retro</div>
+          <div class="feat"><canvas width="12" height="12" data-sprite="mon"></canvas>Arcade de 3 carriles</div>
+          <div class="feat"><canvas width="10" height="5" data-sprite="key" style="height:17px"></canvas>Juguetería y calle al atardecer</div>
+        </div>
+        <a class="cta" href="jugar.html"><span class="spark">✦</span>JUGÁ EL PROTOTIPO<span class="spark">✦</span></a>
+        <p class="note">Se juega en el navegador con el dedo, el mouse o las flechas.</p>
+      </div>
+
+      <div class="stage" id="stage" aria-label="La chica salta junto a su conejo; el monstruo azul se asoma">
+        <div class="glow"></div>
+        <div class="floaty" data-depth="18" style="left:4%;top:44%;width:12%"><canvas width="10" height="10" data-sprite="gift" style="--d:4.6s"></canvas></div>
+        <div class="floaty" data-depth="30" style="left:68%;top:56%;width:22%"><canvas width="10" height="5" data-sprite="key" style="--d:3.8s;--r0:-18deg;--r1:-4deg"></canvas></div>
+        <div class="floaty" data-depth="12" style="left:14%;top:76%;width:11%"><canvas width="9" height="8" data-sprite="heart" style="--d:3.2s"></canvas></div>
+        <div class="floaty" data-depth="24" style="left:58%;top:6%;width:9%"><canvas width="9" height="8" data-sprite="heart" style="--d:5s"></canvas></div>
+        <div class="floaty" data-depth="16" style="left:44%;top:82%;width:12%"><canvas width="10" height="10" data-sprite="gift" style="--d:4.1s;--r0:6deg;--r1:-10deg"></canvas></div>
+        <canvas id="hero-girl" class="sprite" width="12" height="14" data-sprite="girlrun"></canvas>
+        <canvas id="hero-rab" class="sprite" width="12" height="11" data-sprite="rab"></canvas>
+        <canvas id="hero-mon" class="sprite" width="12" height="12" title="¡No lo toques!"></canvas>
+        <div class="badge b1"><span>Prototipo /<br>Demo jugable</span></div>
+        <div class="badge b2"><span>Edición<br>PC</span></div>
+      </div>
+    </section>
+
+    <section id="arcade" aria-labelledby="t-arcade">
+      <h2 class="sec-title" id="t-arcade">EL MENÚ ARCADE</h2>
+      <p class="sec-lede">Mueve la selección con ↑ ↓ o con la palanca, confirma con A. Para jugar desde acá hace falta un crédito: inserta una moneda.</p>
+      <div class="cabinet">
+        <div class="crt" id="crt" tabindex="0" aria-label="Pantalla del menú. Usa las flechas y Enter.">
+          <div class="crt-head"><span>RESCATE DEL CONEJO</span><span class="cred" id="cred">CRÉDITOS 0</span></div>
+          <div class="crt-grid">
+            <ul class="menu-list" id="menu">
+              <li><button type="button" data-k="jugar"><span class="arrow"></span>JUGAR</button></li>
+              <li><button type="button" data-k="como"><span class="arrow"></span>CÓMO SE JUEGA</button></li>
+              <li><button type="button" data-k="niveles"><span class="arrow"></span>NIVELES</button></li>
+              <li><button type="button" data-k="creditos"><span class="arrow"></span>CRÉDITOS</button></li>
+            </ul>
+            <div class="screen-out" id="out" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="controls">
+          <div class="slot">
+            <div class="slot-mouth" id="mouth"></div>
+            <button class="coin-btn" id="coin" type="button">INSERTAR<br>MONEDA</button>
+          </div>
+          <div class="stick" aria-hidden="true"><div class="ball" id="ball"></div><div class="shaft"></div><div class="base"></div></div>
+          <div class="arcade-btns">
+            <button class="abtn a" type="button" id="btnA" aria-label="Botón A: confirmar">A</button>
+            <button class="abtn b" type="button" id="btnB" aria-label="Botón B: bajar en el menú">B</button>
+          </div>
+          <span class="keys-hint">↑ ↓ moverse · Enter confirmar</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pantallas" aria-labelledby="t-pant">
+      <h2 class="sec-title" id="t-pant">LAS PANTALLAS</h2>
+      <p class="sec-lede">Las seis pantallas del juego, en vivo. Pasan solas cada pocos segundos; también puedes elegirlas.</p>
+      <div class="gallery">
+        <div class="viewer">
+          <canvas id="big" width="320" height="180" aria-label="Pantalla seleccionada"></canvas>
+          <button class="nav-btn prev" id="prev" type="button" aria-label="Pantalla anterior">◀</button>
+          <button class="nav-btn next" id="next" type="button" aria-label="Pantalla siguiente">▶</button>
+        </div>
+        <div class="caption"><b id="capT"></b><span id="capD"></span></div>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+    </section>
+
+    <section id="niveles" aria-labelledby="t-niv">
+      <h2 class="sec-title" id="t-niv">DOS ESCENARIOS</h2>
+      <p class="sec-lede">Cada nivel empieza con 3 vidas. En la calle todo llega más rápido.</p>
+      <div class="levels">
+        <article class="level">
+          <canvas id="lv1" width="320" height="180" aria-label="Nivel 1: la juguetería"></canvas>
+          <span class="tag">NIVEL 1</span>
+          <h3>La juguetería</h3>
+          <p>Piso de baldosas, estantes de ositos y pelotas. 3 llaves abren la puerta.</p>
+        </article>
+        <article class="level">
+          <canvas id="lv2" width="320" height="180" aria-label="Nivel 2: la calle al atardecer"></canvas>
+          <span class="tag">NIVEL 2</span>
+          <h3>La calle al atardecer</h3>
+          <p>Adoquines oscuros y faroles que se encienden. 5 llaves liberan al conejo.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Rescate del Conejo · prototipo hecho en Unity 2D · talidecode.com</span>
+    <span class="pill">PC · DEMO</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- sprites (los mismos del juego) ----------
+  const PAL = { h:'#6b3a1f', s:'#ffd1a8', e:'#2b1a3a', m:'#ff8fa3', p:'#ff6fb5', l:'#ffd1a8', k:'#3b2a5a', b:'#4a7dff', d:'#1b2a66', w:'#ffffff',
+    y:'#ffd23f', o:'#a37a00', r:'#ff4d6d', v:'#a45cff', W:'#f4f4f4', P:'#ffb3c7', D:'#2b1a3a' };
+  const TOP = ['...hhhhhh...','..hhhhhhhh..','..hssssssh..','..hsesseshh.','..hssssssh..','...ssmmss...','....pppp....','..spppppps..','..spppppps..','...pppppp...','..pppppppp..'];
+  const SPR = {
+    girl: TOP.concat(['...ll..ll...','...ll..ll...','..kkk..kkk..']),
+    girlrun: TOP.concat(['..ll....ll..','..ll....ll..','.kkk....kkk.']),
+    girlrun2: TOP.concat(['....llll....','....llll....','...kkkkkk...']),
+    mon: ['..b......b..','..bb....bb..','..bbbbbbbb..','.bbbbbbbbbb.','.bwwbbbbwwb.','.bwdbbbbwdb.','.bbbbbbbbbb.','.bdwdwdwdwb.','.bbbbbbbbbb.','.bbbbbbbbbb.','..bb.bb.bb..','..bb.bb.bb..'],
+    mon2: ['..b......b..','..bb....bb..','..bbbbbbbb..','.bbbbbbbbbb.','.bwwbbbbwwb.','.bwdbbbbwdb.','.bbbbbbbbbb.','.bdwdwdwdwb.','.bbbbbbbbbb.','.bbbbbbbbbb.','.bb.bb.bb...','.bb.bb.bb...'],
+    rab: ['...WW..WW...','...WP..PW...','...WP..PW...','...WW..WW...','..WWWWWWWW..','.WWDWWWWDWW.','.WWWWPPWWWW.','.WWWWWWWWWW.','..WWWWWWWW..','..WWWWWWWW..','...WW..WW...'],
+    key: ['.yyy......','yo.oy.....','y...yyyyyy','yo.oy..y.y','.yyy...y.y'],
+    heart: ['.rr...rr.','rWrr.rrrr','rWrrrrrrr','rrrrrrrrr','.rrrrrrr.','..rrrrr..','...rrr...','....r....'],
+    gift: ['..yy..yy..','...yyyy...','vvvvyyvvvv','vvvvyyvvvv','yyyyyyyyyy','vvvvyyvvvv','vvvvyyvvvv','vvvvyyvvvv','vvvvyyvvvv','vvvvyyvvvv'],
+  };
+  function paint(g, rows, x = 0, y = 0, tint) {
+    rows.forEach((row, j) => [...row].forEach((c, i) => { if (c !== '.') { g.fillStyle = tint || PAL[c]; g.fillRect(x + i, y + j, 1, 1); } }));
+  }
+  const IMG = {};
+  for (const k in SPR) {
+    const c = document.createElement('canvas'); c.width = SPR[k][0].length; c.height = SPR[k].length;
+    paint(c.getContext('2d'), SPR[k]); IMG[k] = c;
+  }
+  document.querySelectorAll('canvas[data-sprite]').forEach(c => paint(c.getContext('2d'), SPR[c.dataset.sprite]));
+
+  // monstruo del héroe: los ojos siguen al cursor
+  const monC = document.getElementById('hero-mon'), monG = monC.getContext('2d');
+  function drawMon(dx) {
+    monG.clearRect(0, 0, 12, 12); paint(monG, SPR.mon);
+    monG.fillStyle = '#ffffff'; monG.fillRect(2, 5, 2, 1); monG.fillRect(8, 5, 2, 1);
+    monG.fillStyle = '#1b2a66'; monG.fillRect(dx < 0 ? 2 : 3, 5, 1, 1); monG.fillRect(dx < 0 ? 8 : 9, 5, 1, 1);
+  }
+  drawMon(-1);
+
+  // ---------- sonido 8 bits (apagado hasta que el visitante lo active) ----------
+  let actx = null, soundOn = false;
+  const sndBtn = document.getElementById('snd');
+  function audio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch { actx = null; } } if (actx && actx.state === 'suspended') actx.resume(); }
+  function beep(f, d = 0.08, type = 'square', v = 0.06, slide = null, when = 0) {
+    if (!soundOn || !actx) return;
+    const t = actx.currentTime + when, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d + 0.02);
+  }
+  sndBtn.addEventListener('click', () => {
+    audio(); soundOn = !soundOn;
+    sndBtn.textContent = soundOn ? 'Sonido: sí' : 'Sonido: no'; sndBtn.setAttribute('aria-pressed', String(soundOn));
+    if (soundOn) { beep(523, 0.08); beep(784, 0.12, 'square', 0.06, null, 0.08); }
+  });
+
+  // ---------- cielo de estrellas ----------
+  const sc = document.getElementById('stars'), sg = sc.getContext('2d');
+  let stars = [];
+  function sizeStars() {
+    sc.width = innerWidth; sc.height = innerHeight;
+    stars = Array.from({ length: Math.round(innerWidth * innerHeight / 5200) }, () => ({
+      x: Math.random() * sc.width, y: Math.random() * sc.height, s: Math.random() < 0.15 ? 3 : 2,
+      p: Math.random() * 6.28, c: ['#ffffff', '#9fd8ff', '#ff6ec7', '#4ff3ff', '#ffe94a'][Math.floor(Math.random() * 5)] }));
+  }
+  sizeStars(); addEventListener('resize', sizeStars);
+  function drawStars(t) {
+    const grd = sg.createLinearGradient(0, 0, 0, sc.height);
+    grd.addColorStop(0, '#0d0b2a'); grd.addColorStop(0.6, '#1a1650'); grd.addColorStop(1, '#2a1250');
+    sg.fillStyle = grd; sg.fillRect(0, 0, sc.width, sc.height);
+    for (const s of stars) {
+      sg.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(t * 1.2 + s.p));
+      sg.fillStyle = s.c; sg.fillRect(Math.round(s.x), Math.round(s.y), s.s, s.s);
+    }
+    sg.globalAlpha = 1;
+  }
+
+  // ---------- nubes de humo ----------
+  const smoke = document.getElementById('smoke');
+  const tints = ['rgba(255,110,199,0.55)', 'rgba(79,243,255,0.45)', 'rgba(159,216,255,0.5)', 'rgba(164,92,255,0.5)', 'rgba(255,233,74,0.28)'];
+  for (let i = 0; i < 14; i++) {
+    const d = document.createElement('div'); d.className = 'puff';
+    const w = 220 + Math.random() * 420;
+    d.style.cssText = `width:${w}px;height:${w * 0.55}px;left:${Math.random() * 100 - 15}%;top:${Math.random() * 100}%;` +
+      `background:radial-gradient(closest-side, ${tints[i % tints.length]}, transparent);--dur:${26 + Math.random() * 30}s;animation-delay:${-Math.random() * 30}s`;
+    smoke.appendChild(d);
+  }
+
+  // ---------- parallax del escenario + ojos del monstruo ----------
+  const stage = document.getElementById('stage');
+  const floaties = [...stage.querySelectorAll('.floaty')];
+  addEventListener('pointermove', e => {
+    const r = stage.getBoundingClientRect();
+    const nx = (e.clientX - (r.left + r.width / 2)) / r.width, ny = (e.clientY - (r.top + r.height / 2)) / r.height;
+    if (!reduce) floaties.forEach(f => { const k = +f.dataset.depth; f.style.transform = `translate(${-nx * k}px, ${-ny * k}px)`; });
+    const mr = monC.getBoundingClientRect(); drawMon(e.clientX - (mr.left + mr.width / 2));
+  });
+  monC.addEventListener('click', () => { audio(); beep(180, 0.2, 'square', 0.08, 60); monC.animate([{ transform: 'translateY(0) rotate(0)' }, { transform: 'translateY(-10%) rotate(-12deg)' }, { transform: 'translateY(0) rotate(8deg)' }, { transform: 'translateY(0)' }], { duration: 500 }); });
+
+  // chispas pixel al hacer clic
+  addEventListener('pointerdown', e => {
+    if (reduce) return;
+    const cols = ['#ff6ec7', '#4ff3ff', '#ffe94a', '#9fd8ff', '#ffffff'];
+    for (let i = 0; i < 10; i++) {
+      const b = document.createElement('div'); b.className = 'burst';
+      b.style.left = e.clientX + 'px'; b.style.top = e.clientY + 'px'; b.style.background = cols[i % cols.length];
+      document.body.appendChild(b);
+      const a = Math.random() * 6.28, v = 30 + Math.random() * 50;
+      b.animate([{ transform: 'translate(0,0)', opacity: 1 }, { transform: `translate(${Math.cos(a) * v}px, ${Math.sin(a) * v}px)`, opacity: 0 }], { duration: 520, easing: 'ease-out' }).onfinish = () => b.remove();
+    }
+  });
+
+  // ---------- escenas pixel (320x180) ----------
+  const W = 320, H = 180, LANES = [45, 90, 135];
+  function tile(pixel) { const c = document.createElement('canvas'); c.width = 16; c.height = 16; const g = c.getContext('2d');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { g.fillStyle = pixel(x, y); g.fillRect(x, y, 1, 1); } return c; }
+  const TOY = tile((x, y) => ((x >> 3) + (y >> 3)) % 2 ? '#eeb0bd' : '#f6dcc4');
+  const COB = tile((x, y) => { const row = y >> 3, lx = (x + (row % 2) * 4) % 8, ly = y % 8;
+    if (lx === 0 || ly === 0 || ((lx === 1 || lx === 7) && (ly === 1 || ly === 7))) return '#1c1b24';
+    const sh = 62 + ((((x + (row % 2) * 4) >> 3) * 7 + row * 13) * 37) % 26, w = lx <= 2 && ly <= 2 ? 22 : 0;
+    return `rgb(${sh + w + 6},${sh + Math.round(w * 0.6)},${sh + 10})`; });
+  function floor(g, img, off) { const p = g.createPattern(img, 'repeat'); g.save(); g.translate(-(off % 16), 0); g.fillStyle = p; g.fillRect(0, 22, W + 16, H - 44); g.restore();
+    g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(0, 67, W, 1); g.fillRect(0, 112, W, 1); }
+  function spr(g, img, cx, cy, s = 2) { const w = img.width * s, h = img.height * s; g.drawImage(img, Math.round(cx - w / 2), Math.round(cy - h / 2), w, h); }
+  function txt(g, s, x, y, al = 'center', c = '#fff', size = 8) { g.font = `${size}px "Press Start 2P", monospace`; g.textAlign = al; g.textBaseline = 'middle';
+    g.fillStyle = '#000'; g.fillText(s, x + 1, y + 1); g.fillStyle = c; g.fillText(s, x, y); }
+  function toy(g, off, open) {
+    floor(g, TOY, off);
+    g.fillStyle = '#8a4b3a'; g.fillRect(0, 0, W, 22); g.fillStyle = '#5e3022'; g.fillRect(0, 17, W, 3);
+    const cols = ['#ff4d6d', '#ffd23f', '#5a86ff', '#4cd964', '#c86bff'];
+    for (let x = -32; x < W + 32; x += 32) { const i = Math.abs(Math.floor((x + off * 0.6) / 32)) % 5; g.fillStyle = cols[i]; g.fillRect(x - (off * 0.6 % 32) + 8, 8, 9, 9); }
+    g.fillStyle = '#6b3a28'; g.fillRect(0, H - 22, W, 22);
+    g.fillStyle = '#4a2a1c'; g.fillRect(276, 52, 42, 76); g.fillStyle = open ? '#1b1530' : '#a0623f'; g.fillRect(280, 56, 34, 72);
+  }
+  function street(g, off, dusk) {
+    floor(g, COB, off);
+    const air = g.createLinearGradient(0, 22, 0, H - 22); air.addColorStop(0, `rgba(255,120,60,${0.42 - dusk * 0.26})`); air.addColorStop(1, `rgba(20,8,40,${0.35 + dusk * 0.3})`);
+    g.fillStyle = air; g.fillRect(0, 22, W, H - 44);
+    const sky = g.createLinearGradient(0, 0, 0, 22); sky.addColorStop(0, '#5c286e'); sky.addColorStop(1, '#ff8c46'); g.fillStyle = sky; g.fillRect(0, 0, W, 22);
+    g.fillStyle = '#ffc85a'; g.beginPath(); g.arc(250, 21, 9, Math.PI, 0); g.fill();
+    for (let i = 0; i < 16; i++) { const bx = i * 22 - (off * 0.3 % 22), h = 8 + (i * 7) % 12; g.fillStyle = '#17141f'; g.fillRect(bx, 22 - h, 18, h);
+      g.fillStyle = '#ffcf6b'; if (i % 2) g.fillRect(bx + 4, 22 - h + 3, 1, 1); if (i % 3) g.fillRect(bx + 10, 22 - h + 5, 1, 1); }
+    g.fillStyle = '#16151c'; g.fillRect(0, H - 19, W, 19); g.fillStyle = '#4a4752'; g.fillRect(0, H - 22, W, 3);
+  }
+  function cage(g, t, free) { const hop = free ? Math.abs(Math.sin(t * 8)) * 8 : Math.abs(Math.sin(t * 5)) * 3; spr(g, IMG.rab, 298, 92 - hop);
+    if (!free) { g.fillStyle = '#9aa0b5'; for (let x = 284; x <= 312; x += 6) g.fillRect(x, 74, 2, 34); g.fillRect(282, 72, 32, 3); g.fillRect(282, 107, 32, 3); } }
+  function hud(g, lives, keys, maxK, gifts, label) {
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, W, 22);
+    spr(g, IMG.heart, 12, 11, 1.4); txt(g, `${lives}/3`, 22, 12, 'left');
+    spr(g, IMG.key, 74, 11, 1.4); txt(g, `${keys}/${maxK}`, 86, 12, 'left', '#ffd23f');
+    spr(g, IMG.gift, 134, 11, 1.2); txt(g, `${gifts}`, 144, 12, 'left', '#e0c6ff');
+    txt(g, label, W - 6, 12, 'right', '#f4f0ff', 6);
+  }
+  function box(g, border, lines, sub) {
+    g.fillStyle = 'rgba(13,10,34,0.72)'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#0d0c22'; g.fillRect(58, 34, 204, 112); g.fillStyle = border; g.fillRect(60, 36, 200, 108); g.fillStyle = '#29265a'; g.fillRect(63, 39, 194, 102);
+    lines.forEach((l, i) => txt(g, l, W / 2, 70 + i * 14, 'center', border === '#ff4d6d' ? '#ff6b86' : '#ffd23f', 10));
+    if (sub) txt(g, sub, W / 2, 112, 'center', '#f4f0ff', 6);
+  }
+  const items = [{ k: 'mon', x: 200, l: 0 }, { k: 'key', x: 150, l: 2 }, { k: 'heart', x: 260, l: 1 }, { k: 'mon', x: 330, l: 2 }, { k: 'gift', x: 390, l: 0 }];
+  function movers(g, t, speed) {
+    for (const it of items) { const x = ((it.x - t * speed) % 380 + 380) % 380 - 30;
+      spr(g, it.k === 'mon' ? (Math.floor(t * 8) % 2 ? IMG.mon : IMG.mon2) : IMG[it.k], x, LANES[it.l] + (it.k === 'mon' ? 0 : Math.sin(t * 6 + it.x) * 1.5)); }
+  }
+  function runner(g, t, laneSeq) { const lane = laneSeq[Math.floor(t / 1.4) % laneSeq.length]; const f = Math.floor(t * 10) % 2;
+    spr(g, f ? IMG.girlrun : IMG.girlrun2, 36, LANES[lane] + (f ? -1 : 0)); }
+  const confetti = Array.from({ length: 60 }, (_, i) => ({ x: Math.random() * W, s: 20 + Math.random() * 40, p: Math.random() * 10, c: ['#ff4d6d', '#ffd23f', '#4cd964', '#5a86ff', '#c86bff'][i % 5] }));
+
+  const SCENES = [
+    { t: 'Menú principal', d: 'Jugar o salir. La chica espera en Idle y el conejo, en su jaula.', draw(g, t) {
+      toy(g, 0, false); g.fillStyle = 'rgba(18,14,44,0.62)'; g.fillRect(0, 0, W, H);
+      txt(g, 'RESCATE', W / 2, 40, 'center', '#ffd23f', 14); txt(g, 'DEL CONEJO', W / 2, 60, 'center', '#ffd23f', 14);
+      const on = Math.floor(t * 2) % 2; g.fillStyle = '#ffd23f'; g.fillRect(118, 92, 84, 18); txt(g, 'JUGAR', W / 2, 102, 'center', '#2a1a00', 8);
+      if (on) { g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(108, 96); g.lineTo(114, 101); g.lineTo(108, 106); g.fill(); }
+      g.strokeStyle = '#f4f0ff'; g.lineWidth = 1; g.strokeRect(118.5, 118.5, 83, 17); txt(g, 'SALIR', W / 2, 128, 'center', '#f4f0ff', 8);
+      spr(g, IMG.girl, 52, 110 + Math.round(Math.sin(t * 4)), 3); cage(g, t, false); } },
+    { t: 'HUD · Nivel 1, juguetería', d: 'Vidas, llaves y regalos arriba. Los objetos llegan de derecha a izquierda.', draw(g, t) {
+      toy(g, t * 45, false); cage(g, t, false); movers(g, t, 90); runner(g, t, [1, 0, 1, 2]); hud(g, 2, 1, 3, 2, 'NIVEL 1 · JUGUETERÍA'); } },
+    { t: 'HUD · Nivel 2, calle al atardecer', d: 'Adoquines oscuros, faroles y todo más rápido.', draw(g, t) {
+      street(g, t * 60, 0.3); cage(g, t, false); movers(g, t, 120); runner(g, t, [0, 1, 2, 1]); hud(g, 3, 4, 5, 5, 'NIVEL 2 · LA CALLE'); } },
+    { t: 'Panel · Pasa al nivel 2', d: 'Sin botones: a los 2 segundos carga la calle.', draw(g, t) {
+      toy(g, 0, true); box(g, '#ffd23f', ['¡ABRISTE', 'LA PUERTA!'], 'EL MONSTRUO HUYÓ A LA CALLE…');
+      const k = (t % 2) / 2; g.fillStyle = '#0d0c22'; g.fillRect(90, 124, 140, 8); g.fillStyle = '#ffd23f'; g.fillRect(90, 124, 140 * k, 8); } },
+    { t: 'Panel · Victoria', d: 'Confeti, el conejo libre y los botones Jugar de nuevo y Menú.', draw(g, t) {
+      street(g, 0, 0.7); box(g, '#ffd23f', ['¡LIBERASTE', 'AL CONEJO!'], 'JUGAR DE NUEVO   ·   MENÚ');
+      spr(g, IMG.girl, 128, 52, 1.6); spr(g, IMG.rab, 192, 54 - Math.abs(Math.sin(t * 7)) * 5, 1.6);
+      for (const c of confetti) { const y = ((t * c.s + c.p * 18) % (H + 10)) - 10; g.fillStyle = c.c; g.fillRect(Math.round(c.x + Math.sin(t * 2 + c.p) * 6), Math.round(y), 2, 2); } } },
+    { t: 'Panel · Derrota', d: 'Sin vidas: Reintentar repite el mismo nivel.', draw(g, t) {
+      toy(g, 0, false); g.fillStyle = 'rgba(60,0,30,0.35)'; g.fillRect(0, 0, W, H); box(g, '#ff4d6d', ['EL MONSTRUO', 'TE ATRAPÓ'], Math.floor(t * 2) % 2 ? '▶ REINTENTAR      MENÚ' : '  REINTENTAR      MENÚ');
+      spr(g, Math.floor(t * 6) % 2 ? IMG.mon : IMG.mon2, W / 2, 52 + Math.sin(t * 3) * 2, 1.6); } },
+  ];
+
+  // galería
+  const big = document.getElementById('big').getContext('2d'); big.imageSmoothingEnabled = false;
+  const thumbsEl = document.getElementById('thumbs');
+  const thumbs = SCENES.map((s, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', s.t);
+    const c = document.createElement('canvas'); c.width = 320; c.height = 180; b.appendChild(c); thumbsEl.appendChild(b);
+    b.addEventListener('click', () => { audio(); beep(660, 0.06); show(i); });
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false; return { b, g };
+  });
+  let cur = 0, lastSwitch = 0;
+  function show(i) { cur = (i + SCENES.length) % SCENES.length; lastSwitch = performance.now();
+    document.getElementById('capT').textContent = `${cur + 1}/6 · ${SCENES[cur].t}`; document.getElementById('capD').textContent = SCENES[cur].d;
+    thumbs.forEach((th, j) => th.b.classList.toggle('on', j === cur)); }
+  document.getElementById('prev').addEventListener('click', () => { audio(); beep(440, 0.06); show(cur - 1); });
+  document.getElementById('next').addEventListener('click', () => { audio(); beep(660, 0.06); show(cur + 1); });
+  show(0);
+
+  const lv1 = document.getElementById('lv1').getContext('2d'), lv2 = document.getElementById('lv2').getContext('2d');
+
+  // ---------- menú arcade ----------
+  const menu = [...document.querySelectorAll('#menu button')], out = document.getElementById('out'), crt = document.getElementById('crt');
+  let sel = 0, credits = 0;
+  const credEl = document.getElementById('cred');
+  const OUT = {
+    jugar: () => credits > 0
+      ? `<h3>¡LISTO!</h3><p>Tienes ${credits} crédito${credits > 1 ? 's' : ''}. Presiona A para empezar.</p><canvas width="320" height="180" id="mini"></canvas>`
+      : `<h3>JUGAR</h3><p class="flash">INSERTA UNA MONEDA</p><p>La ranura está a la derecha. Cada moneda es un crédito (son monedas de mentira).</p><canvas width="320" height="180" id="mini"></canvas>`,
+    como: () => `<h3>CÓMO SE JUEGA</h3><ul><li>Toca un carril o usa ↑ ↓ / W S.</li><li>Junta llaves: 3 en la juguetería, 5 en la calle.</li><li>Cada monstruo te saca 1 vida. Un corazón te devuelve 1.</li><li>Los regalos suman y largan confeti.</li></ul>`,
+    niveles: () => `<h3>NIVELES</h3><p>1 · La juguetería: baldosas y estantes de juguetes.</p><p>2 · La calle al atardecer: adoquines oscuros y faroles.</p><canvas width="320" height="180" id="mini2"></canvas>`,
+    creditos: () => `<h3>CRÉDITOS</h3><p>Diseño y desarrollo: [TU NOMBRE]</p><p>Hecho en Unity 2D · Pre-Entrega</p><p>Música y sonidos: Juhani Junkala, Kenney (CC0)</p>`,
+  };
+  function select(i, sound = true) {
+    sel = (i + menu.length) % menu.length; menu.forEach((b, j) => b.classList.toggle('on', j === sel));
+    out.innerHTML = OUT[menu[sel].dataset.k](); if (sound) beep(520 + sel * 60, 0.05);
+  }
+  function confirm() {
+    const k = menu[sel].dataset.k; audio();
+    if (k === 'jugar') {
+      if (credits > 0) { credits--; credEl.textContent = `CRÉDITOS ${credits}`; beep(523, 0.1); beep(659, 0.1, 'square', 0.06, null, 0.1); beep(784, 0.2, 'square', 0.06, null, 0.2);
+        out.innerHTML = '<h3>PRESS START</h3><p class="flash">CARGANDO…</p>'; setTimeout(() => { location.href = 'jugar.html'; }, 900); }
+      else { beep(150, 0.25, 'square', 0.07, 90); select(0, false); crt.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }], { duration: 260 }); }
+    } else if (k === 'niveles') { document.getElementById('niveles').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); beep(700, 0.08); }
+    else beep(700, 0.08);
+  }
+  menu.forEach((b, i) => { b.addEventListener('mouseenter', () => select(i)); b.addEventListener('focus', () => select(i, false)); b.addEventListener('click', () => { select(i, false); confirm(); }); });
+  const ball = document.getElementById('ball');
+  crt.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 's') { e.preventDefault(); audio(); select(sel + 1); ball.style.transform = 'translateY(8px)'; }
+    else if (e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); audio(); select(sel - 1); ball.style.transform = 'translateY(-8px)'; }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); confirm(); }
+    setTimeout(() => { ball.style.transform = ''; }, 140);
+  });
+  document.getElementById('btnA').addEventListener('click', confirm);
+  document.getElementById('btnB').addEventListener('click', () => { audio(); select(sel + 1); });
+  select(0, false);
+
+  // moneda que cae en la ranura
+  const coinBtn = document.getElementById('coin'), mouth = document.getElementById('mouth');
+  coinBtn.addEventListener('click', () => {
+    audio();
+    const from = coinBtn.getBoundingClientRect(), to = mouth.getBoundingClientRect();
+    const c = document.createElement('div'); c.className = 'coin'; c.textContent = '¢'; document.body.appendChild(c);
+    const x0 = from.left + from.width / 2 - 17, y0 = from.top + 60, x1 = to.left + to.width / 2 - 17, y1 = to.top - 10;
+    c.animate([{ transform: `translate(${x0}px, ${y0}px) rotateY(0)` }, { transform: `translate(${(x0 + x1) / 2}px, ${y1 - 70}px) rotateY(540deg)`, offset: 0.55 },
+      { transform: `translate(${x1}px, ${y1}px) rotateY(900deg) scaleY(0.2)`, opacity: 0.2 }], { duration: reduce ? 1 : 700, easing: 'ease-in' }).onfinish = () => {
+      c.remove(); credits++; credEl.textContent = `CRÉDITOS ${credits}`; beep(988, 0.07); beep(1319, 0.18, 'square', 0.06, null, 0.07);
+      mouth.animate([{ boxShadow: 'inset 0 0 0 3px #ff9f1c, 0 0 34px rgba(255,159,28,1)' }, { boxShadow: 'inset 0 0 0 3px #ff9f1c, 0 0 14px rgba(255,159,28,0.6)' }], { duration: 500 });
+      if (menu[sel].dataset.k === 'jugar') select(sel, false);
+    };
+  });
+
+  // ---------- bucle de animación ----------
+  function frame(now) {
+    const t = now / 1000;
+    drawStars(reduce ? 0 : t);
+    if (!reduce && now - lastSwitch > 4500) show(cur + 1);
+    SCENES[cur].draw(big, reduce ? 0 : t);
+    thumbs.forEach((th, i) => SCENES[i].draw(th.g, reduce ? 0 : t));
+    SCENES[1].draw(lv1, reduce ? 0 : t); SCENES[2].draw(lv2, reduce ? 0 : t);
+    const mini = document.getElementById('mini'); if (mini) SCENES[0].draw(mini.getContext('2d'), t);
+    const mini2 = document.getElementById('mini2'); if (mini2) SCENES[2].draw(mini2.getContext('2d'), t);
+    requestAnimationFrame(frame);
+  }
+  const go = () => requestAnimationFrame(frame);
+  if (document.fonts && document.fonts.load) document.fonts.load('8px "Press Start 2P"').finally(go); else go();
+})();
+</script>
+
+</html>

@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate del Conejo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: una "pantalla de arcade" centrada sobre un fondo nocturno; debajo, controles y reglas en una columna angosta. */
+:root {
+  --night: #1c1a38;
+  --panel: #29265a;
+  --ink: #f4f0ff;
+  --muted: #b8b2e0;
+  --key: #ffd23f;
+  --monster: #5a86ff;
+  --heart: #ff4d6d;
+  --line: #3d3a78;
+  --font-pixel: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--night); color: var(--ink); }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-inline: 16px;
+  padding-block: 24px 40px;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+h1 {
+  font-family: var(--font-pixel);
+  font-size: clamp(16px, 3.4vw, 26px);
+  line-height: 1.3;
+  margin: 0;
+  color: var(--key);
+  text-shadow: 3px 3px 0 #000;
+  text-wrap: balance;
+}
+.tag { font-size: 14px; color: var(--muted); margin: 0; max-width: 46ch; }
+
+.screen {
+  position: relative;
+  border: 6px solid #0d0c22;
+  outline: 3px solid var(--line);
+  border-radius: 6px;
+  background: #0d0c22;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
+  cursor: pointer;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: rgba(10, 8, 30, 0.72);
+  text-align: center;
+  padding: 16px;
+}
+.overlay h2 {
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 3vw, 24px);
+  line-height: 1.4;
+  margin: 0;
+  text-shadow: 3px 3px 0 #000;
+  text-wrap: balance;
+}
+.overlay h2.win { color: var(--key); }
+.overlay h2.lose { color: var(--heart); }
+.overlay p { margin: 0; color: var(--ink); font-size: clamp(12px, 2vw, 16px); }
+.btn {
+  font-family: var(--font-pixel);
+  font-size: clamp(10px, 1.6vw, 14px);
+  padding: 12px 18px;
+  background: var(--key);
+  color: #2a1a00;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: 0 4px 0 #a37a00;
+  cursor: pointer;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #a37a00; }
+.btn:focus-visible, .ghost:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.ghost {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 10px 14px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bar .hint { color: var(--muted); font-size: 14px; }
+kbd {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 3px 6px;
+  border: 2px solid var(--line);
+  border-bottom-width: 4px;
+  border-radius: 3px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 2px solid var(--line); border-radius: 4px; padding: 16px 18px; min-width: 0; }
+.card h3 {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+.card ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.card li { display: flex; gap: 10px; align-items: baseline; }
+.dot { flex: none; width: 10px; height: 10px; transform: translateY(1px); }
+.d-key { background: var(--key); }
+.d-heart { background: var(--heart); }
+.d-mon { background: var(--monster); }
+.d-gift { background: #b06bff; }
+.note { font-size: 14px; color: var(--muted); }
+.note strong { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Rescate del Conejo</h1>
+    <p class="tag"><a href="index.html" style="color:#4ff3ff">← Volver</a> · Demo web del MVP con las mismas reglas que los scripts de Unity: la juguetería y después la calle. Sirve para probar la mecánica antes de armar el proyecto.</p>
+  </header>
+
+  <div class="screen" id="screen">
+    <canvas id="game" width="320" height="180" aria-label="Juego: tres carriles, la chica a la izquierda, los monstruos llegan desde la derecha"></canvas>
+    <div class="overlay" id="end" hidden>
+      <h2 id="end-title" class="win">¡Liberaste al conejo!</h2>
+      <p id="end-detail"></p>
+      <div id="end-buttons"><button class="btn" id="btn-retry" type="button">Reintentar</button></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="ghost" id="btn-sound" type="button" aria-pressed="true">Sonido: sí</button>
+    <button class="ghost" id="btn-restart" type="button">Empezar desde el nivel 1</button>
+    <span class="hint">Toca un carril, o usa <kbd>↑</kbd> <kbd>↓</kbd> / <kbd>W</kbd> <kbd>S</kbd>. <kbd>M</kbd> silencia.</span>
+  </div>
+
+  <div class="cols">
+    <section class="card">
+      <h3>REGLAS</h3>
+      <ul>
+        <li><span class="dot d-key"></span><span><strong>Nivel 1, la juguetería:</strong> 3 llaves abren la puerta. El monstruo huye a la calle con el conejo.</span></li>
+        <li><span class="dot d-key"></span><span><strong>Nivel 2, la calle:</strong> todo llega más rápido. 5 llaves abren la jaula.</span></li>
+        <li><span class="dot d-mon"></span><span>Cada monstruo que te toca te saca <strong>1 vida</strong>. Cada nivel empieza con 3.</span></li>
+        <li><span class="dot d-heart"></span><span>Un corazón te devuelve 1 vida (máximo 3) y el ícono late.</span></li>
+        <li><span class="dot d-gift"></span><span>Los regalos suman puntos y largan confeti. No cambian el resultado.</span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>QUÉ PROBAR ACÁ</h3>
+      <p class="note">¿Se entiende en 5 segundos? ¿La velocidad es justa? ¿3 y 5 llaves son demasiadas o muy pocas? ¿El salto de velocidad del nivel 2 se nota? Si algo se siente mal, se cambia un número en el Inspector de Unity, no el código.</p>
+      <p class="note"><strong>Esto no es el build de Unity.</strong> El arte y los sonidos son de prueba, hechos en código. La entrega es el .exe que genera Unity.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- constantes (mismos valores que los scripts de Unity, convertidos a píxeles) ----------
+  const W = 320, H = 180;
+  const UNIT = 22.5;                     // 1 unidad de Unity = 22.5 px (cámara de tamaño 4)
+  const LANES = [45, 90, 135];           // carriles en Y = 2, 0, -2
+  const PLAYER_X = 36;                   // x = -5.5
+  const SPEED = 4 * UNIT;                // Mover.speed = 4
+  const SWITCH_SPEED = 20 * UNIT;        // PlayerController.switchSpeed = 20
+  const MAX_LIVES = 3;
+  const MIN_INTERVAL = 0.6, INTERVAL_STEP = 0.03;
+  // Los dos escenarios (en Unity: dos escenas con distinto GameManager.keysToWin y Spawner.startInterval)
+  const LEVELS = [
+    { name: 'NIVEL 1', place: 'LA JUGUETERIA', keys: 3, interval: 1.5 },
+    { name: 'NIVEL 2', place: 'LA CALLE', keys: 5, interval: 1.1 },
+  ];
+  const lv = () => LEVELS[st.level];
+  const CHANCE = { key: 0.2, heart: 0.08, gift: 0.15 };
+  const S = 2;                           // escala de los sprites pixel
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // ---------- sprites pixel ----------
+  const PAL = {
+    h: '#6b3a1f', s: '#ffd1a8', e: '#2b1a3a', m: '#ff8fa3', p: '#ff6fb5', l: '#ffd1a8', k: '#3b2a5a',
+    b: '#4a7dff', d: '#1b2a66', w: '#ffffff', y: '#ffd23f', o: '#a37a00', r: '#ff4d6d', v: '#a45cff', W: '#f4f4f4', P: '#ffb3c7', D: '#2b1a3a',
+  };
+  const GIRL_TOP = [
+    '...hhhhhh...', '..hhhhhhhh..', '..hssssssh..', '..hsesseshh.', '..hssssssh..', '...ssmmss...',
+    '....pppp....', '..spppppps..', '..spppppps..', '...pppppp...', '..pppppppp..',
+  ];
+  const GIRL_IDLE = GIRL_TOP.concat(['...ll..ll...', '...ll..ll...', '..kkk..kkk..']);
+  const GIRL_RUN_A = GIRL_TOP.concat(['..ll....ll..', '..ll....ll..', '.kkk....kkk.']);
+  const GIRL_RUN_B = GIRL_TOP.concat(['....llll....', '....llll....', '...kkkkkk...']);
+  const MON_TOP = [
+    '..b......b..', '..bb....bb..', '..bbbbbbbb..', '.bbbbbbbbbb.', '.bwwbbbbwwb.', '.bwdbbbbwdb.',
+    '.bbbbbbbbbb.', '.bdwdwdwdwb.', '.bbbbbbbbbb.', '.bbbbbbbbbb.',
+  ];
+  const MON_A = MON_TOP.concat(['..bb.bb.bb..', '..bb.bb.bb..']);
+  const MON_B = MON_TOP.concat(['.bb.bb.bb...', '.bb.bb.bb...']);
+  const RABBIT = [
+    '...WW..WW...', '...WP..PW...', '...WP..PW...', '...WW..WW...', '..WWWWWWWW..', '.WWDWWWWDWW.',
+    '.WWWWPPWWWW.', '.WWWWWWWWWW.', '..WWWWWWWW..', '..WWWWWWWW..', '...WW..WW...',
+  ];
+  const KEY = ['.yyy......', 'yo.oy.....', 'y...yyyyyy', 'yo.oy..y.y', '.yyy...y.y'];
+  const HEART = ['.rr...rr.', 'rWrr.rrrr', 'rWrrrrrrr', 'rrrrrrrrr', '.rrrrrrr.', '..rrrrr..', '...rrr...', '....r....'];
+  const GIFT = ['..yy..yy..', '...yyyy...', 'vvvvyyvvvv', 'vvvvyyvvvv', 'yyyyyyyyyy', 'vvvvyyvvvv', 'vvvvyyvvvv', 'vvvvyyvvvv', 'vvvvyyvvvv', 'vvvvyyvvvv'];
+
+  function makeSprite(rows, tint) {
+    const w = rows[0].length, h = rows.length;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      g.fillStyle = tint || PAL[ch] || '#f0f';
+      g.fillRect(x, y, 1, 1);
+    }));
+    return c;
+  }
+  const SPR = {
+    idle: makeSprite(GIRL_IDLE), runA: makeSprite(GIRL_RUN_A), runB: makeSprite(GIRL_RUN_B),
+    hitIdle: makeSprite(GIRL_IDLE, '#ff3030'), hitA: makeSprite(GIRL_RUN_A, '#ff3030'), hitB: makeSprite(GIRL_RUN_B, '#ff3030'),
+    monA: makeSprite(MON_A), monB: makeSprite(MON_B), rabbit: makeSprite(RABBIT),
+    key: makeSprite(KEY), heart: makeSprite(HEART), gift: makeSprite(GIFT),
+  };
+
+  // ---------- audio (todo sintetizado; en Unity van los archivos que elijas) ----------
+  let actx = null, master = null, soundOn = true, musicTimer = null, nextNoteTime = 0, step = 0;
+  function ensureAudio() {
+    if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      master = actx.createGain();
+      master.gain.value = soundOn ? 0.6 : 0;
+      master.connect(actx.destination);
+      startMusic();
+    } catch { actx = null; }
+  }
+  function tone(freq, dur, type = 'square', vol = 0.15, slideTo = null, when = 0) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noise(dur, vol = 0.1, hp = 1000, when = 0) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const len = Math.max(1, Math.floor(actx.sampleRate * dur));
+    const buf = actx.createBuffer(1, len, actx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const f = actx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t);
+  }
+  const SFX = {
+    hit() { tone(220, 0.2, 'square', 0.2, 55); noise(0.12, 0.15, 400); },
+    key() { tone(880, 0.08, 'triangle', 0.2); tone(1320, 0.14, 'triangle', 0.2, null, 0.07); },
+    heart() { // latido: "pum-pum" grave
+      tone(70, 0.16, 'sine', 0.6, 40); tone(70, 0.16, 'sine', 0.45, 40, 0.2);
+      tone(880, 0.25, 'triangle', 0.08, 1320, 0.05);
+    },
+    gift() { // sorpresa + "pop" de confeti
+      noise(0.08, 0.25, 2500);
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.1, 'square', 0.1, null, 0.04 + i * 0.05));
+    },
+    step() { noise(0.03, 0.05, 3000); },
+  };
+  // Música en loop: 16 pasos, melodía + bajo.
+  const MELODY = [523, 0, 659, 0, 784, 659, 0, 523, 587, 0, 698, 0, 659, 0, 523, 0];
+  const BASS = [131, 0, 0, 0, 175, 0, 0, 0, 147, 0, 0, 0, 196, 0, 0, 0];
+  function startMusic() {
+    if (musicTimer) return;
+    nextNoteTime = actx.currentTime + 0.1;
+    musicTimer = setInterval(() => {
+      while (nextNoteTime < actx.currentTime + 0.2) {
+        const when = nextNoteTime - actx.currentTime;
+        if (MELODY[step]) tone(MELODY[step], 0.12, 'square', 0.035, null, when);
+        if (BASS[step]) tone(BASS[step], 0.35, 'triangle', 0.09, null, when);
+        step = (step + 1) % 16;
+        nextNoteTime += 0.15;
+      }
+    }, 50);
+  }
+  function setSound(on) {
+    soundOn = on;
+    if (master) master.gain.value = on ? 0.6 : 0;
+    const b = document.getElementById('btn-sound');
+    b.textContent = on ? 'Sonido: sí' : 'Sonido: no';
+    b.setAttribute('aria-pressed', String(on));
+  }
+
+  // ---------- estado ----------
+  let st;
+  function reset(level = 0) {
+    st = {
+      level, phase: 'ready', lives: MAX_LIVES, keys: 0, gifts: 0,
+      lane: 1, y: LANES[1], items: [], confetti: [],
+      interval: LEVELS[level].interval, spawnTimer: 0, time: 0,
+      hitTimer: 0, pulse: -1, stepTimer: 0, scroll: 0,
+      won: false, transition: -1,
+    };
+    document.getElementById('end').hidden = true;
+  }
+  reset(0);
+
+  function startIfNeeded() {
+    ensureAudio();
+    if (st.phase === 'ready') { st.phase = 'playing'; st.spawnTimer = 0; }
+  }
+  function goLane(i) {
+    if (st.phase === 'over') return;
+    startIfNeeded();
+    st.lane = Math.max(0, Math.min(LANES.length - 1, i));
+  }
+  function nearestLane(y) {
+    let best = 0;
+    LANES.forEach((ly, i) => { if (Math.abs(ly - y) < Math.abs(LANES[best] - y)) best = i; });
+    return best;
+  }
+
+  // ---------- input ----------
+  canvas.addEventListener('pointerdown', e => {
+    const r = canvas.getBoundingClientRect();
+    goLane(nearestLane((e.clientY - r.top) / r.height * H));
+  });
+  window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    if (k === 'arrowup' || k === 'w') { e.preventDefault(); goLane(st.lane - 1); }
+    else if (k === 'arrowdown' || k === 's') { e.preventDefault(); goLane(st.lane + 1); }
+    else if (k === 'm') setSound(!soundOn);
+    else if ((k === 'enter' || k === ' ') && st.phase === 'over' && st.transition < 0) { e.preventDefault(); retry(); }
+  });
+  // Perdiste: repite el mismo nivel. Ganaste el último: vuelve al nivel 1.
+  function retry() { reset(st.won ? 0 : st.level); }
+  document.getElementById('btn-retry').addEventListener('click', () => { ensureAudio(); retry(); });
+  document.getElementById('btn-restart').addEventListener('click', () => { ensureAudio(); reset(0); });
+  document.getElementById('btn-sound').addEventListener('click', () => { ensureAudio(); setSound(!soundOn); });
+
+  // ---------- lógica ----------
+  function spawn() {
+    const r = Math.random();
+    let kind = 'monster';
+    if (r < CHANCE.key) kind = 'key';
+    else if (r < CHANCE.key + CHANCE.heart) kind = 'heart';
+    else if (r < CHANCE.key + CHANCE.heart + CHANCE.gift) kind = 'gift';
+    const spr = { monster: SPR.monA, key: SPR.key, heart: SPR.heart, gift: SPR.gift }[kind];
+    st.items.push({ kind, x: W + 16, y: LANES[Math.floor(Math.random() * LANES.length)], w: spr.width * S, h: spr.height * S });
+  }
+
+  function end(won) {
+    st.phase = 'over';
+    st.won = won;
+    const nextLevel = won && st.level < LEVELS.length - 1;
+    const title = document.getElementById('end-title');
+    const detail = document.getElementById('end-detail');
+    title.className = won ? 'win' : 'lose';
+    if (nextLevel) {
+      // Como GameManager.nextScene: mensaje y, a los 2 segundos, el siguiente nivel.
+      title.textContent = '¡Abriste la puerta!';
+      detail.textContent = 'El monstruo huyó a la calle con el conejo…';
+      st.transition = 2;
+    } else {
+      title.textContent = won ? '¡Liberaste al conejo!' : 'El monstruo te atrapó';
+      detail.textContent = `${lv().name}: llaves ${st.keys}/${lv().keys} · regalos ${st.gifts} · ${st.time.toFixed(1)} s`;
+    }
+    document.getElementById('btn-retry').textContent = won ? 'Jugar de nuevo' : 'Reintentar';
+    document.getElementById('end-buttons').hidden = nextLevel;
+    document.getElementById('end').hidden = false;
+    if (won) burst(290, 90, 80);
+  }
+
+  function burst(x, y, n) {
+    const colors = ['#ff4d6d', '#ffd23f', '#4cd964', '#5a86ff', '#c86bff'];
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 90;
+      st.confetti.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, life: 0.7 + Math.random() * 0.5, c: colors[i % colors.length] });
+    }
+  }
+
+  function overlap(a, b) {
+    return Math.abs(a.x - b.x) * 2 < (a.w + b.w) && Math.abs(a.y - b.y) * 2 < (a.h + b.h);
+  }
+
+  function update(dt) {
+    if (st.phase === 'playing') {
+      st.time += dt;
+      st.spawnTimer -= dt;
+      if (st.spawnTimer <= 0) {
+        spawn();
+        st.spawnTimer = st.interval;
+        st.interval = Math.max(MIN_INTERVAL, st.interval - INTERVAL_STEP);
+      }
+      st.scroll += SPEED * 0.5 * dt;
+      st.stepTimer -= dt;
+      if (st.stepTimer <= 0) { SFX.step(); st.stepTimer = 0.18; }
+    }
+
+    // cambio de carril (FixedUpdate en Unity)
+    const target = LANES[st.lane];
+    const dy = target - st.y, maxStep = SWITCH_SPEED * dt;
+    st.y = Math.abs(dy) <= maxStep ? target : st.y + Math.sign(dy) * maxStep;
+
+    if (st.phase === 'playing') {
+      const player = { x: PLAYER_X, y: st.y, w: 12 * S * 0.7, h: 14 * S * 0.7 };
+      for (const it of st.items) {
+        it.x -= SPEED * dt;
+        if (it.dead) continue;
+        const box = { x: it.x, y: it.y, w: it.w * 0.8, h: it.h * 0.8 };
+        if (!overlap(player, box)) continue;
+        it.dead = true;
+        if (it.kind === 'monster') { SFX.hit(); st.hitTimer = 0.12; st.lives = Math.max(0, st.lives - 1); if (st.lives === 0) end(false); }
+        else if (it.kind === 'key') { SFX.key(); st.keys++; if (st.keys >= lv().keys) end(true); }
+        else if (it.kind === 'heart') { SFX.heart(); if (st.lives < MAX_LIVES) { st.lives++; st.pulse = 0; } }
+        else if (it.kind === 'gift') { SFX.gift(); st.gifts++; burst(it.x, it.y, 45); }
+        if (st.phase === 'over') break;
+      }
+      st.items = st.items.filter(it => !it.dead && it.x > -24);
+    }
+
+    for (const p of st.confetti) { p.vy += 260 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+    st.confetti = st.confetti.filter(p => p.life > 0);
+    if (st.hitTimer > 0) st.hitTimer -= dt;
+    if (st.transition >= 0) { st.transition -= dt; if (st.transition < 0) reset(st.level + 1); }
+    if (st.pulse >= 0) { st.pulse += dt; if (st.pulse > 0.5) st.pulse = -1; }
+  }
+
+  // ---------- dibujo ----------
+  function drawSprite(img, cx, cy, scale = S) {
+    const w = img.width * scale, h = img.height * scale;
+    ctx.drawImage(img, Math.round(cx - w / 2), Math.round(cy - h / 2), w, h);
+  }
+
+  // Baldosas de 16x16 que se repiten (en Unity: SpriteRenderer con Draw Mode = Tiled).
+  function makeTile(pixel) {
+    const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+    const g = c.getContext('2d');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { g.fillStyle = pixel(x, y); g.fillRect(x, y, 1, 1); }
+    return ctx.createPattern(c, 'repeat');
+  }
+  const TOY_FLOOR = makeTile((x, y) => ((x >> 3) + (y >> 3)) % 2 ? '#eeb0bd' : '#f6dcc4');
+  const COBBLES = makeTile((x, y) => {          // mismo dibujo que SceneBuilder.Cobblestone
+    const row = y >> 3, lx = (x + (row % 2) * 4) % 8, ly = y % 8;
+    const joint = lx === 0 || ly === 0;
+    const corner = (lx === 1 || lx === 7) && (ly === 1 || ly === 7);
+    if (joint || corner) return '#1c1b24';
+    const stone = (((x + (row % 2) * 4) >> 3) * 7 + row * 13);
+    const shade = 62 + (stone * 37) % 26;            // piedra oscura y gastada
+    const warm = lx <= 2 && ly <= 2 ? 22 : 0;         // brillo cálido del atardecer en el borde
+    return `rgb(${shade + warm + 6},${shade + Math.round(warm * 0.6)},${shade + 10})`;
+  });
+
+  function drawFloor(pattern) {
+    const off = Math.round(st.scroll) % 16;
+    ctx.save();
+    ctx.translate(-off, 0);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 22, W + 16, H - 44);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, 67, W, 1); ctx.fillRect(0, 112, W, 1);
+  }
+
+  function drawToyStore() {
+    drawFloor(TOY_FLOOR);
+    // pared con estante y juguetes
+    ctx.fillStyle = '#8a4b3a'; ctx.fillRect(0, 0, W, 22);
+    ctx.fillStyle = '#5e3022'; ctx.fillRect(0, 17, W, 3);
+    const toys = ['#ff4d6d', '#ffd23f', '#5a86ff', '#4cd964', '#c86bff'];
+    const off = Math.round(st.scroll * 0.6) % 32;
+    for (let x = -32; x < W + 32; x += 32) {
+      const i = Math.abs(((x + 32 * 10) / 32) | 0) % toys.length;
+      ctx.fillStyle = toys[i];
+      const tx = x - off + 6;
+      if (i % 3 === 0) { ctx.fillRect(tx, 8, 9, 9); ctx.fillRect(tx + 1, 5, 3, 3); ctx.fillRect(tx + 5, 5, 3, 3); } // osito
+      else if (i % 3 === 1) { ctx.beginPath(); ctx.arc(tx + 5, 12, 5, 0, Math.PI * 2); ctx.fill(); }               // pelota
+      else { ctx.fillRect(tx, 10, 6, 7); ctx.fillStyle = '#fff'; ctx.fillRect(tx + 6, 12, 6, 5); }                  // cubos
+    }
+    // zócalo de madera
+    ctx.fillStyle = '#6b3a28'; ctx.fillRect(0, H - 22, W, 22);
+    ctx.fillStyle = '#7d4632';
+    for (let x = -off; x < W; x += 32) ctx.fillRect(x, H - 22, 1, 22);
+    // puerta de la juguetería detrás de la jaula
+    const open = st.phase === 'over' && st.won;
+    ctx.fillStyle = '#4a2a1c'; ctx.fillRect(276, 52, 42, 76);
+    ctx.fillStyle = open ? '#1b1530' : '#a0623f'; ctx.fillRect(280, 56, 34, 72);
+    if (!open) { ctx.fillStyle = '#ffd23f'; ctx.fillRect(283, 92, 3, 3); }
+  }
+
+  // Calle al atardecer: el cielo pasa de naranja a noche mientras dura el nivel.
+  const lerp = (a, b, k) => Math.round(a + (b - a) * k);
+  const mix = (c1, c2, k) => `rgb(${lerp(c1[0], c2[0], k)},${lerp(c1[1], c2[1], k)},${lerp(c1[2], c2[2], k)})`;
+  const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = n + (n << 3); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return (n ^ (n >>> 15)) >>> 0; };
+
+  function drawStreet() {
+    const dusk = Math.min(1, st.time / 60);           // 0 = atardecer, 1 = noche (al minuto)
+    drawFloor(COBBLES);
+
+    // aire del atardecer sobre los adoquines: cálido arriba, violeta oscuro abajo
+    const air = ctx.createLinearGradient(0, 22, 0, H - 22);
+    air.addColorStop(0, `rgba(255,120,60,${0.42 - dusk * 0.26})`);
+    air.addColorStop(0.45, `rgba(190,70,90,${0.18 - dusk * 0.1})`);
+    air.addColorStop(1, `rgba(20,8,40,${0.35 + dusk * 0.3})`);
+    ctx.fillStyle = air; ctx.fillRect(0, 22, W, H - 44);
+
+    // cielo
+    const sky = ctx.createLinearGradient(0, 0, 0, 22);
+    sky.addColorStop(0, mix([92, 40, 110], [14, 12, 40], dusk));
+    sky.addColorStop(1, mix([255, 140, 70], [70, 30, 70], dusk));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 22);
+    // sol que se esconde
+    ctx.fillStyle = mix([255, 200, 90], [200, 80, 60], dusk);
+    ctx.beginPath(); ctx.arc(250, 20 + dusk * 14, 9, Math.PI, 0); ctx.fill();
+
+    // edificios en silueta con ventanas que se van encendiendo (parallax lento)
+    const off = Math.round(st.scroll * 0.3);
+    for (let i = Math.floor(off / 26) - 1; i < Math.floor(off / 26) + 15; i++) {
+      const bx = i * 26 - off, h = 8 + hash(i) % 12, bw = 18 + hash(i * 7) % 8;
+      ctx.fillStyle = '#17141f'; ctx.fillRect(bx, 22 - h, bw, h);
+      for (let wy = 22 - h + 2; wy < 20; wy += 3) for (let wx = bx + 2; wx < bx + bw - 1; wx += 3) {
+        if (hash(i * 131 + wx * 7 + wy) % 100 < 20 + dusk * 45) { ctx.fillStyle = '#ffcf6b'; ctx.fillRect(wx, wy, 1, 1); }
+      }
+    }
+    ctx.fillStyle = '#2a2633'; ctx.fillRect(0, 19, W, 3);   // vereda de arriba
+
+    // faroles: se encienden y proyectan luz sobre los adoquines
+    const lampOff = Math.round(st.scroll) % 80, glow = 0.25 + dusk * 0.55;
+    for (let x = -lampOff; x < W + 80; x += 80) {
+      const pool = ctx.createRadialGradient(x + 21, 28, 2, x + 21, 36, 56);
+      pool.addColorStop(0, `rgba(255,200,110,${glow * 0.8})`);
+      pool.addColorStop(1, 'rgba(255,200,110,0)');
+      ctx.fillStyle = pool; ctx.fillRect(x - 40, 22, 122, 90);
+      ctx.fillStyle = '#0e0d14'; ctx.fillRect(x + 20, 5, 2, 15);
+      ctx.fillStyle = `rgba(255,229,138,${0.5 + glow * 0.5})`; ctx.fillRect(x + 18, 3, 6, 3);
+    }
+
+    // cordón y calle de abajo, con el reflejo húmedo de las luces
+    ctx.fillStyle = '#4a4752'; ctx.fillRect(0, H - 22, W, 3);
+    ctx.fillStyle = '#16151c'; ctx.fillRect(0, H - 19, W, 19);
+    ctx.fillStyle = `rgba(255,190,110,${0.15 + dusk * 0.25})`;
+    for (let x = -lampOff; x < W + 80; x += 80) ctx.fillRect(x + 16, H - 12, 10, 1);
+    ctx.fillStyle = 'rgba(244,240,255,0.55)';
+    for (let x = -(Math.round(st.scroll) % 40); x < W; x += 40) ctx.fillRect(x + 6, H - 7, 18, 2);
+  }
+
+  function drawBackground() {
+    if (st.level === 0) drawToyStore(); else drawStreet();
+  }
+
+  function drawRabbit(t) {
+    const free = st.phase === 'over' && st.won && st.level === LEVELS.length - 1;
+    const hop = free ? Math.abs(Math.sin(t * 8)) * 8 : Math.abs(Math.sin(t * Math.PI / 0.6)) * 3;
+    drawSprite(SPR.rabbit, 298, 92 - hop);
+    if (!free) {
+      ctx.fillStyle = '#9aa0b5';
+      for (let x = 284; x <= 312; x += 6) ctx.fillRect(x, 74, 2, 34);
+      ctx.fillRect(282, 72, 32, 3); ctx.fillRect(282, 107, 32, 3);
+    }
+  }
+
+  function drawHUD() {
+    // corazón que late (HeartPulse)
+    let k = 1;
+    if (st.pulse >= 0) {
+      const p = st.pulse;
+      k = p < 0.12 ? 1 + 0.4 * (p / 0.12) : p < 0.24 ? 1.4 - 0.4 * ((p - 0.12) / 0.12)
+        : p < 0.36 ? 1 + 0.25 * ((p - 0.24) / 0.12) : 1.25 - 0.25 * Math.min(1, (p - 0.36) / 0.12);
+    }
+    drawSprite(SPR.heart, 14, 11, S * k * 0.8);
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    const txt = (s, x, y, align, color) => {
+      ctx.textAlign = align;
+      ctx.fillStyle = '#000'; ctx.fillText(s, x + 1, y + 1);
+      ctx.fillStyle = color; ctx.fillText(s, x, y);
+    };
+    txt(`${st.lives}/${MAX_LIVES}`, 26, 12, 'left', '#fff');
+    drawSprite(SPR.key, 132, 11, 1.4);
+    txt(`${st.keys}/${lv().keys}`, 143, 12, 'left', '#ffd23f');
+    txt(`REGALOS ${st.gifts}`, W - 6, 12, 'right', '#e0c6ff');
+    if (st.phase === 'ready') {
+      ctx.fillStyle = 'rgba(10,8,30,0.55)'; ctx.fillRect(70, 62, 180, 50);
+      txt(lv().name, W / 2, 76, 'center', '#ffd23f');
+      txt(lv().place, W / 2, 92, 'center', '#fff');
+      const blink = Math.floor(performance.now() / 500) % 2 === 0;
+      if (blink) txt('TOCA O USA LAS FLECHAS', W / 2, H - 11, 'center', '#fff');
+    } else {
+      txt(`${lv().name}/2`, W / 2, H - 11, 'center', 'rgba(255,255,255,0.7)');
+    }
+  }
+
+  function draw(t) {
+    drawBackground();
+    drawRabbit(t);
+    for (const it of st.items) {
+      const img = it.kind === 'monster' ? (Math.floor(t * 8) % 2 ? SPR.monA : SPR.monB) : SPR[it.kind];
+      const bob = it.kind === 'monster' ? 0 : Math.sin(t * 6 + it.x * 0.05) * 1.5;
+      drawSprite(img, it.x, it.y + bob);
+    }
+    // chica: Idle si no se está jugando, Run mientras se juega
+    const hit = st.hitTimer > 0;
+    let img, bob = 0;
+    if (st.phase === 'playing') {
+      const f = Math.floor(t * 10) % 2;
+      img = hit ? (f ? SPR.hitA : SPR.hitB) : (f ? SPR.runA : SPR.runB);
+      bob = f ? -1 : 0;
+    } else {
+      img = hit ? SPR.hitIdle : SPR.idle;
+      bob = Math.round(Math.sin(t * Math.PI * 2 / 1.2));
+    }
+    drawSprite(img, PLAYER_X, st.y + bob);
+    for (const p of st.confetti) { ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); }
+    drawHUD();
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    draw(now / 1000);
+    requestAnimationFrame(frame);
+  }
+  const go = () => requestAnimationFrame(frame);
+  if (document.fonts && document.fonts.load) document.fonts.load('8px "Press Start 2P"').finally(go); else go();
+})();
+</script>
+
+</html>
