@@ -23,6 +23,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { background: var(--night); color: var(--ink); }
 body {
   font-family: var(--font-body);
@@ -482,11 +483,11 @@ kbd {
     const row = y >> 3, lx = (x + (row % 2) * 4) % 8, ly = y % 8;
     const joint = lx === 0 || ly === 0;
     const corner = (lx === 1 || lx === 7) && (ly === 1 || ly === 7);
-    if (joint || corner) return '#464850';
+    if (joint || corner) return '#1c1b24';
     const stone = (((x + (row % 2) * 4) >> 3) * 7 + row * 13);
-    const shade = 140 + (stone * 37) % 40;
-    const light = lx <= 2 && ly <= 2 ? 25 : 0;
-    return `rgb(${shade + light},${shade + light},${shade + 6 + light})`;
+    const shade = 62 + (stone * 37) % 26;            // piedra oscura y gastada
+    const warm = lx <= 2 && ly <= 2 ? 22 : 0;         // brillo cálido del atardecer en el borde
+    return `rgb(${shade + warm + 6},${shade + Math.round(warm * 0.6)},${shade + 10})`;
   });
 
   function drawFloor(pattern) {
@@ -526,21 +527,60 @@ kbd {
     if (!open) { ctx.fillStyle = '#ffd23f'; ctx.fillRect(283, 92, 3, 3); }
   }
 
+  // Calle al atardecer: el cielo pasa de naranja a noche mientras dura el nivel.
+  const lerp = (a, b, k) => Math.round(a + (b - a) * k);
+  const mix = (c1, c2, k) => `rgb(${lerp(c1[0], c2[0], k)},${lerp(c1[1], c2[1], k)},${lerp(c1[2], c2[2], k)})`;
+  const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = n + (n << 3); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return (n ^ (n >>> 15)) >>> 0; };
+
   function drawStreet() {
+    const dusk = Math.min(1, st.time / 60);           // 0 = atardecer, 1 = noche (al minuto)
     drawFloor(COBBLES);
-    // vereda con faroles
-    ctx.fillStyle = '#5b5870'; ctx.fillRect(0, 0, W, 22);
-    ctx.fillStyle = '#9d9aae'; ctx.fillRect(0, 16, W, 6);
-    const off = Math.round(st.scroll) % 80;
-    for (let x = -off; x < W + 80; x += 80) {
-      ctx.fillStyle = '#2b2a3a'; ctx.fillRect(x + 20, 4, 2, 13);
-      ctx.fillStyle = '#ffe58a'; ctx.fillRect(x + 18, 2, 6, 3);
+
+    // aire del atardecer sobre los adoquines: cálido arriba, violeta oscuro abajo
+    const air = ctx.createLinearGradient(0, 22, 0, H - 22);
+    air.addColorStop(0, `rgba(255,120,60,${0.42 - dusk * 0.26})`);
+    air.addColorStop(0.45, `rgba(190,70,90,${0.18 - dusk * 0.1})`);
+    air.addColorStop(1, `rgba(20,8,40,${0.35 + dusk * 0.3})`);
+    ctx.fillStyle = air; ctx.fillRect(0, 22, W, H - 44);
+
+    // cielo
+    const sky = ctx.createLinearGradient(0, 0, 0, 22);
+    sky.addColorStop(0, mix([92, 40, 110], [14, 12, 40], dusk));
+    sky.addColorStop(1, mix([255, 140, 70], [70, 30, 70], dusk));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 22);
+    // sol que se esconde
+    ctx.fillStyle = mix([255, 200, 90], [200, 80, 60], dusk);
+    ctx.beginPath(); ctx.arc(250, 20 + dusk * 14, 9, Math.PI, 0); ctx.fill();
+
+    // edificios en silueta con ventanas que se van encendiendo (parallax lento)
+    const off = Math.round(st.scroll * 0.3);
+    for (let i = Math.floor(off / 26) - 1; i < Math.floor(off / 26) + 15; i++) {
+      const bx = i * 26 - off, h = 8 + hash(i) % 12, bw = 18 + hash(i * 7) % 8;
+      ctx.fillStyle = '#17141f'; ctx.fillRect(bx, 22 - h, bw, h);
+      for (let wy = 22 - h + 2; wy < 20; wy += 3) for (let wx = bx + 2; wx < bx + bw - 1; wx += 3) {
+        if (hash(i * 131 + wx * 7 + wy) % 100 < 20 + dusk * 45) { ctx.fillStyle = '#ffcf6b'; ctx.fillRect(wx, wy, 1, 1); }
+      }
     }
-    // cordón de la vereda
-    ctx.fillStyle = '#8d8d99'; ctx.fillRect(0, H - 22, W, 4);
-    ctx.fillStyle = '#3b3b48'; ctx.fillRect(0, H - 18, W, 18);
-    ctx.fillStyle = '#f4f0ff';
-    for (let x = -(Math.round(st.scroll) % 40); x < W; x += 40) ctx.fillRect(x + 6, H - 10, 18, 2);
+    ctx.fillStyle = '#2a2633'; ctx.fillRect(0, 19, W, 3);   // vereda de arriba
+
+    // faroles: se encienden y proyectan luz sobre los adoquines
+    const lampOff = Math.round(st.scroll) % 80, glow = 0.25 + dusk * 0.55;
+    for (let x = -lampOff; x < W + 80; x += 80) {
+      const pool = ctx.createRadialGradient(x + 21, 28, 2, x + 21, 36, 56);
+      pool.addColorStop(0, `rgba(255,200,110,${glow * 0.8})`);
+      pool.addColorStop(1, 'rgba(255,200,110,0)');
+      ctx.fillStyle = pool; ctx.fillRect(x - 40, 22, 122, 90);
+      ctx.fillStyle = '#0e0d14'; ctx.fillRect(x + 20, 5, 2, 15);
+      ctx.fillStyle = `rgba(255,229,138,${0.5 + glow * 0.5})`; ctx.fillRect(x + 18, 3, 6, 3);
+    }
+
+    // cordón y calle de abajo, con el reflejo húmedo de las luces
+    ctx.fillStyle = '#4a4752'; ctx.fillRect(0, H - 22, W, 3);
+    ctx.fillStyle = '#16151c'; ctx.fillRect(0, H - 19, W, 19);
+    ctx.fillStyle = `rgba(255,190,110,${0.15 + dusk * 0.25})`;
+    for (let x = -lampOff; x < W + 80; x += 80) ctx.fillRect(x + 16, H - 12, 10, 1);
+    ctx.fillStyle = 'rgba(244,240,255,0.55)';
+    for (let x = -(Math.round(st.scroll) % 40); x < W; x += 40) ctx.fillRect(x + 6, H - 7, 18, 2);
   }
 
   function drawBackground() {

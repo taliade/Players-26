@@ -143,7 +143,7 @@ Está escrita para alguien que nunca hizo un videojuego. Si una palabra no la en
 **Historia, en 3 líneas:**
 1. **Nivel 1, la juguetería:** el monstruo azul encierra al conejo y cierra la puerta. Juntas **3 llaves** y abres la puerta.
 2. El monstruo escapa a la calle con el conejo.
-3. **Nivel 2, la calle de adoquines:** es más rápido. Juntas **5 llaves** y liberas al conejo.
+3. **Nivel 2, la calle de adoquines al atardecer:** oscura, con faroles que se encienden, y más rápida. Juntas **5 llaves** y liberas al conejo.
 
 | | Nivel 1: Juguetería | Nivel 2: Calle |
 |---|---|---|

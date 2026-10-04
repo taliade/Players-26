@@ -99,7 +99,7 @@ public static class SceneBuilder
             WinMessage = "¡Liberaste al conejo!",
             Background = assets.BgStreet,
             Tile = assets.StreetTile,
-            CameraColor = new Color(0.2f, 0.22f, 0.28f),
+            CameraColor = new Color(0.24f, 0.12f, 0.2f),   // cielo de atardecer
         });
         BuildMenuScene(assets);
 
@@ -813,7 +813,7 @@ public static class SceneBuilder
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    // Adoquines: piedras de 8x8 con junta oscura, una fila corrida respecto de la otra.
+    // Adoquines al atardecer: piedras oscuras de 8x8, junta casi negra y un brillo cálido en el borde.
     static Color32 Cobblestone(int x, int y)
     {
         int row = y / 8;
@@ -821,13 +821,13 @@ public static class SceneBuilder
         int ly = y % 8;
         bool joint = lx == 0 || ly == 0;
         bool corner = (lx == 1 || lx == 7) && (ly == 1 || ly == 7);
-        if (joint || corner) return new Color32(70, 72, 80, 255);
+        if (joint || corner) return new Color32(28, 27, 36, 255);
 
         int stone = ((x + (row % 2) * 4) / 8) * 7 + row * 13;
-        byte shade = (byte)(140 + (stone * 37) % 40);
-        bool light = lx <= 2 && ly >= 5;   // brillo arriba a la izquierda de cada piedra
-        return light ? new Color32((byte)(shade + 25), (byte)(shade + 25), (byte)(shade + 30), 255)
-                     : new Color32(shade, shade, (byte)(shade + 6), 255);
+        int shade = 62 + (stone * 37) % 26;
+        bool warm = lx <= 2 && ly >= 5;    // reflejo del sol bajo, arriba a la izquierda de cada piedra
+        return warm ? new Color32((byte)(shade + 28), (byte)(shade + 13), (byte)(shade + 10), 255)
+                    : new Color32((byte)(shade + 6), (byte)shade, (byte)(shade + 10), 255);
     }
 
     // Material sin luces: los sprites se ven siempre, aunque la escena no tenga Light 2D.
