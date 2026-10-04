@@ -6,8 +6,23 @@ Scripts y guía para armar el MVP de la Pre-Entrega. El diseño está en [`GDD.m
 
 ## 0. Antes de todo (primera hora)
 1. Unity Hub → Unity 6 LTS → plantilla **Universal 2D**.
-2. Haz un **build vacío** ya mismo (*File → Build Profiles → Windows → Build*). Si falla, mejor descubrirlo ahora y no a una hora de la entrega.
-3. Si además quieres Android: instala *Android Build Support* (OpenJDK + SDK + NDK) desde Unity Hub. **iOS no es posible sin Mac.**
+2. Copia las carpetas `Assets/Scripts` y `Assets/Editor` de este repo dentro de `Assets` de tu proyecto.
+   **Ojo:** si modificaste los scripts a mano, compáralos antes de pisarlos.
+3. *Window → TextMeshPro → Import TMP Essential Resources*.
+4. Menú **Rescate → 1. Generar escenas**. Crea `Menu` y `Juego` con todo conectado y las agrega a Build Profiles (Menu = 0, Juego = 1). **Reemplaza la lista de escenas que tuvieras antes.**
+5. Abre la escena `Menu` y dale Play.
+6. Menú **Rescate → 2. Build Windows (.exe)** → `Builds/Windows/RescateDelConejo.exe`. Entrega la carpeta **completa**.
+7. Si quieres Android: instala *Android Build Support* desde Unity Hub. **iOS no es posible sin Mac.**
+
+### Tu arte y tu audio (opcional, se toma solo al regenerar)
+| Carpeta / archivo | Qué poner |
+|---|---|
+| `Assets/Art/Chica/Idle` y `Assets/Art/Chica/Run` | Cuadros de animación (`idle_0.png`, `idle_1.png`… o una hoja recortada) |
+| `Assets/Art/Monstruo`, `Assets/Art/Conejo` | Cuadros (2 o más = animación en loop) |
+| `Assets/Art/Llave`, `Corazon`, `Regalo`, `Fondo` | Un sprite cada una |
+| `Assets/Audio/musica`, `golpe`, `llave`, `corazon`, `regalo`, `pasos` | `.wav`, `.ogg` o `.mp3` con **ese nombre exacto** |
+
+Si falta algo, el generador usa formas de colores y animaciones de rebote, y te dice qué reemplazó.
 
 ## 1. Matriz de componentes
 
@@ -44,6 +59,9 @@ Si no tienes arte: usa packs gratuitos (por ejemplo de kenney.nl, que son CC0, o
 | `Item` | Dice qué es cada prefab (Monstruo/Llave/Corazón/Regalo) | — (datos) |
 | `GameManager` | Vidas, llaves, victoria/derrota, reinicio con SceneManager | Condicionales, Funciones, Reset |
 | `HUDController` | Muestra vidas/llaves y el panel final | UI |
+| `HeartPulse` | El corazón del HUD late al recuperar vida | Feedback |
+| `MenuController` | Botones Jugar / Salir | Escenas |
+| `Editor/SceneBuilder` | Genera escenas, prefabs, animaciones y el .exe | Build |
 
 ## 5. Checklist antes del build
 - [ ] ¿El Player responde al toque/clic y cambia de carril correctamente?

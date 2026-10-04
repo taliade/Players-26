@@ -77,4 +77,10 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
+    // Va conectado al OnClick del botón "Menú".
+    public void GoToMenu()
+    {
+        SceneManager.LoadScene("Menu");
+    }
 }

@@ -2,16 +2,19 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Requisitos: Inputs, Variables, Condicionales, Funciones y animación Idle/Run.
-// Tocás (o hacés clic) en la pantalla y la chica va al carril más cercano a tu dedo.
+// Dos controles: tocar/hacer clic (va al carril más cercano al dedo) o flechas ↑ ↓ / W S (un carril por vez).
 // <Pointer> lee mouse y touch con el mismo código: sirve para PC y para Android.
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] float[] laneY = { 2f, 0f, -2f };   // altura de cada carril, de arriba a abajo
     [SerializeField] float switchSpeed = 20f;           // qué tan rápido cambia de carril
+    [SerializeField] AudioSource footsteps;             // sonido de pasos en loop mientras corre
 
     InputAction pointerPos;
     InputAction pointerPress;
+    InputAction laneUp;
+    InputAction laneDown;
     Rigidbody2D rb;
     Animator anim;
     Camera cam;
@@ -23,6 +26,7 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        rb.sleepMode = RigidbodySleepMode2D.NeverSleep;   // que nunca "se duerma" y deje de detectar choques
         anim = GetComponent<Animator>();
         cam = Camera.main;
 
@@ -31,24 +35,38 @@ public class PlayerController : MonoBehaviour
 
         pointerPos = new InputAction("PointerPos", InputActionType.Value, "<Pointer>/position");
         pointerPress = new InputAction("PointerPress", InputActionType.Button, "<Pointer>/press");
+
+        laneUp = new InputAction("LaneUp", InputActionType.Button);
+        laneUp.AddBinding("<Keyboard>/upArrow");
+        laneUp.AddBinding("<Keyboard>/w");
+
+        laneDown = new InputAction("LaneDown", InputActionType.Button);
+        laneDown.AddBinding("<Keyboard>/downArrow");
+        laneDown.AddBinding("<Keyboard>/s");
     }
 
     void OnEnable()
     {
         pointerPos.Enable();
         pointerPress.Enable();
+        laneUp.Enable();
+        laneDown.Enable();
     }
 
     void OnDisable()
     {
         pointerPos.Disable();
         pointerPress.Disable();
+        laneUp.Disable();
+        laneDown.Disable();
     }
 
     void OnDestroy()
     {
         pointerPos.Dispose();
         pointerPress.Dispose();
+        laneUp.Dispose();
+        laneDown.Dispose();
     }
 
     void Update()
@@ -60,18 +78,48 @@ public class PlayerController : MonoBehaviour
         {
             anim.SetBool("IsRunning", gm.IsPlaying);
         }
+        UpdateFootsteps(gm.IsPlaying);
 
         if (gm.IsOver) return;
-        if (!pointerPress.WasPressedThisFrame()) return;
 
-        // El primer toque arranca la partida.
+        bool tapped = pointerPress.WasPressedThisFrame();
+        bool up = laneUp.WasPressedThisFrame();
+        bool down = laneDown.WasPressedThisFrame();
+        if (!tapped && !up && !down) return;
+
+        // El primer toque o flecha arranca la partida.
         if (!gm.IsPlaying)
         {
             gm.StartGame();
         }
 
-        float tapY = cam.ScreenToWorldPoint(pointerPos.ReadValue<Vector2>()).y;
-        lane = NearestLane(tapY);
+        if (tapped)
+        {
+            float tapY = cam.ScreenToWorldPoint(pointerPos.ReadValue<Vector2>()).y;
+            lane = NearestLane(tapY);
+        }
+        else if (up)
+        {
+            lane = Mathf.Max(0, lane - 1);          // el carril 0 es el de arriba
+        }
+        else
+        {
+            lane = Mathf.Min(laneY.Length - 1, lane + 1);
+        }
+    }
+
+    void UpdateFootsteps(bool running)
+    {
+        if (footsteps == null) return;
+
+        if (running && !footsteps.isPlaying)
+        {
+            footsteps.Play();
+        }
+        else if (!running && footsteps.isPlaying)
+        {
+            footsteps.Stop();
+        }
     }
 
     void FixedUpdate()
