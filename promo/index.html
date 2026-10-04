@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate del Conejo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: una composición vertical 3:4 tipo "editorial 3D" (cintas, documento esmerilado, controles flotantes) y debajo, secciones sobrias en una columna. */
+:root {
+  --paper: #f7f3ec;        /* blanco cálido */
+  --ink: #15131a;
+  --muted: #5e5866;
+  --ice: #cfe6f5;
+  --cobalt: #2348c8;
+  --lavender: #c9b8ef;
+  --coral: #ff7a62;
+  --cyan: #29c6e0;
+  --purple: #7b4fe0;
+  --orange: #ff8a2a;
+  --chip: rgba(255, 255, 255, 0.78);
+  --chip-line: rgba(30, 20, 60, 0.10);
+  --font-text: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-pixel: "Press Start 2P", ui-monospace, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 56px; }
+a { color: var(--cobalt); }
+
+/* ---------- héroe ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 40px; align-items: center; }
+@media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
+.pitch { display: grid; gap: 18px; min-width: 0; }
+.eyebrow { font-family: var(--font-pixel); font-size: 10px; letter-spacing: 0.08em; color: var(--purple); margin: 0; }
+h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.02; letter-spacing: -0.02em; margin: 0; font-weight: 800; text-wrap: balance; }
+.lede { font-size: 20px; color: var(--muted); margin: 0; max-width: 34ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 22px; border-radius: 12px; font-weight: 700; text-decoration: none;
+  background: var(--cobalt); color: #fff; box-shadow: 0 10px 24px -12px rgba(35, 72, 200, 0.7);
+}
+.btn:hover { background: #1b3aa8; }
+.btn.ghost { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--chip-line); }
+.btn:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.note { font-size: 14px; color: var(--muted); margin: 0; }
+
+.stage {
+  position: relative; width: 100%; max-width: 520px; aspect-ratio: 3 / 4; justify-self: center;
+  container-type: inline-size; overflow: hidden; border-radius: 28px;
+  background: var(--paper);
+}
+.stage svg.ribbons { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.doc {
+  position: absolute; left: 15%; top: 19%; width: 62%; height: 60%;
+  border-radius: 4.5cqw; padding: 5cqw 5cqw;
+  background: linear-gradient(160deg, rgba(255,255,255,0.86), rgba(240,244,255,0.66));
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 3cqw 7cqw -2cqw rgba(40, 30, 90, 0.28), inset 0 0 0 1px rgba(255,255,255,0.9);
+  transform: perspective(900px) rotateY(-9deg) rotateZ(-2deg);
+  display: flex; flex-direction: column; gap: 2cqw;
+}
+.doc h2 { margin: 0; font-size: 6cqw; line-height: 1.02; letter-spacing: -0.02em; font-weight: 800; }
+.doc .kicker { margin: 0; font-size: 3.3cqw; font-weight: 600; color: var(--muted); }
+.doc .shot { width: 100%; aspect-ratio: 16 / 9; border-radius: 2cqw; image-rendering: pixelated; display: block; }
+.doc .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.6cqw; font-size: 2.3cqw; line-height: 1.35; color: #2c2833; }
+.doc .cols b { display: block; font-size: 2.5cqw; margin-bottom: 0.6cqw; color: var(--ink); }
+.doc p { margin: 0; }
+
+.chip {
+  position: absolute; display: inline-flex; align-items: center; gap: 1.4cqw;
+  padding: 1.5cqw 2.6cqw; border-radius: 2.4cqw; font-size: 2.8cqw; font-weight: 600; white-space: nowrap;
+  background: var(--chip); box-shadow: 0 1.4cqw 3cqw -1.4cqw rgba(30, 20, 60, 0.35), inset 0 0 0 1px var(--chip-line);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.chip .dot { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: var(--cobalt); }
+.seg { position: absolute; display: flex; padding: 0.8cqw; gap: 0.6cqw; border-radius: 2.6cqw; background: var(--chip);
+  box-shadow: 0 1.4cqw 3cqw -1.4cqw rgba(30,20,60,0.35), inset 0 0 0 1px var(--chip-line); font-size: 2.6cqw; font-weight: 600; }
+.seg span { padding: 1cqw 2.2cqw; border-radius: 1.8cqw; }
+.seg .on { background: var(--ink); color: #fff; }
+.file { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 2.4cqw; font-weight: 500; }
+
+.token { position: absolute; }
+.token svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* ---------- secciones ---------- */
+section h3 { font-size: 28px; line-height: 1.15; margin: 0 0 18px; letter-spacing: -0.01em; text-wrap: balance; }
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .features { grid-template-columns: 1fr; } }
+.feat { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.feat .sw { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+.feat h4 { margin: 0; font-size: 19px; }
+.feat p { margin: 0; color: var(--muted); }
+
+.levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 760px) { .levels { grid-template-columns: 1fr; } }
+.level { background: #fff; border-radius: 20px; padding: 16px; box-shadow: inset 0 0 0 1px var(--chip-line); display: grid; gap: 12px; min-width: 0; }
+.level canvas { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; image-rendering: pixelated; display: block; }
+.level h4 { margin: 0; font-size: 20px; }
+.level p { margin: 0; color: var(--muted); }
+.level .tag { font-family: var(--font-pixel); font-size: 9px; color: var(--purple); letter-spacing: 0.06em; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 10px; }
+.facts span { padding: 8px 14px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px var(--chip-line); font-weight: 600; font-size: 15px; }
+
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--chip-line); padding-top: 20px; }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="pitch">
+      <p class="eyebrow">ARCADE PIXEL · 2 NIVELES · PC</p>
+      <h1>Rescate del Conejo</h1>
+      <p class="lede">Cambia de carril, esquiva al monstruo azul y junta las llaves para liberar a tu conejo. Primero en la juguetería, después en una calle de adoquines al atardecer.</p>
+      <div class="ctas">
+        <a class="btn" href="https://claude.ai/artifact/Szofv6BLpo5K9Tkg4kH7hS" target="_blank" rel="noopener">Jugar la demo</a>
+        <a class="btn ghost" href="#niveles">Ver los niveles</a>
+      </div>
+      <p class="note">La demo es una versión web del prototipo de Unity. Se juega con el dedo, el mouse o las flechas.</p>
+    </div>
+
+    <div class="stage" aria-label="Composición promocional: documento con el juego, cintas de colores y controles">
+      <svg class="ribbons" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="ice" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#e6f4fc"/><stop offset="0.5" stop-color="#bfdcf1"/><stop offset="1" stop-color="#d9ecf8"/>
+          </linearGradient>
+          <linearGradient id="pearl" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#9fb8ff" stop-opacity="0"/><stop offset="0.5" stop-color="#c7a8ff" stop-opacity="0.55"/><stop offset="1" stop-color="#9fe2ff" stop-opacity="0"/>
+          </linearGradient>
+          <pattern id="weave" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+            <rect width="6" height="6" fill="#2348c8"/>
+            <rect width="3" height="6" fill="#2f57dc"/>
+            <rect y="0" width="6" height="1.2" fill="#1a37a6" opacity="0.7"/>
+          </pattern>
+          <pattern id="ribs" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-20)">
+            <rect width="4" height="4" fill="#cdbdf2"/><rect width="1.4" height="4" fill="#b7a3ea"/>
+          </pattern>
+          <pattern id="perf" width="7" height="7" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" fill="#ff7a62"/><circle cx="3.5" cy="3.5" r="1.3" fill="#f7f3ec"/>
+          </pattern>
+          <filter id="ao" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2a1e5a" flood-opacity="0.22"/>
+          </filter>
+        </defs>
+        <!-- cinta celeste hielo: baja desde arriba a la izquierda en S, detrás del documento -->
+        <path d="M-30 30 C 60 10, 120 70, 90 140 S 40 260, 140 300 S 250 360, 200 430" fill="none" stroke="url(#ice)" stroke-width="46" stroke-linecap="round" filter="url(#ao)"/>
+        <path d="M-30 30 C 60 10, 120 70, 90 140 S 40 260, 140 300 S 250 360, 200 430" fill="none" stroke="url(#pearl)" stroke-width="14" stroke-linecap="round"/>
+        <!-- film lavanda acanalado cruzando por el medio -->
+        <path d="M-20 215 C 70 185, 150 250, 320 200" fill="none" stroke="url(#ribs)" stroke-width="26" filter="url(#ao)"/>
+        <!-- tira coral perforada -->
+        <path d="M-20 250 C 90 290, 190 220, 320 262" fill="none" stroke="url(#perf)" stroke-width="13" filter="url(#ao)"/>
+        <!-- cinta cobalto tejida: sube desde abajo a la derecha -->
+        <path d="M330 420 C 250 380, 290 310, 230 270 S 180 200, 250 160" fill="none" stroke="url(#weave)" stroke-width="30" stroke-linecap="round" filter="url(#ao)"/>
+      </svg>
+
+      <div class="doc">
+        <h2>Rescate del Conejo</h2>
+        <p class="kicker">Un arcade pixel de 3 carriles</p>
+        <canvas class="shot" id="shot-doc" width="160" height="90" aria-label="Captura del nivel de la juguetería"></canvas>
+        <div class="cols">
+          <p><b>Nivel 1 · Juguetería</b>Esquiva monstruos entre juguetes. 3 llaves abren la puerta.</p>
+          <p><b>Nivel 2 · La calle</b>Adoquines al atardecer y faroles. 5 llaves liberan al conejo.</p>
+        </div>
+      </div>
+
+      <!-- controles estilo Fluent -->
+      <span class="chip" style="left:5%; top:10%"><span class="dot"></span>Juguetería</span>
+      <span class="chip" style="left:4%; top:82%"><span class="dot" style="background:var(--coral)"></span>Calle</span>
+      <span class="seg" style="left:36%; top:82.5%"><span>Fácil</span><span class="on">Medio</span><span>Difícil</span></span>
+      <span class="chip file" style="left:28%; top:91%">Demo_Rescate_del_Conejo</span>
+      <span class="chip" style="left:79%; top:40%">Compartir</span>
+      <span class="chip" style="left:80%; top:48.5%">Guardar</span>
+      <span class="chip" style="left:80%; top:62%; background:var(--ink); color:#fff">▶ Jugar</span>
+
+      <!-- tokens: cruz violeta, cápsula cian con punta naranja, flor blanca -->
+      <span class="token" style="left:72%; top:12%; width:11%; aspect-ratio:1">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M15 3h10a3 3 0 0 1 3 3v9h9a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-9v9a3 3 0 0 1-3 3H15a3 3 0 0 1-3-3v-9H3a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3h9V6a3 3 0 0 1 3-3z" fill="#7b4fe0" filter="url(#ao)"/><path d="M15 6h6v4h-6z" fill="#fff" opacity="0.35"/></svg>
+      </span>
+      <span class="token" style="left:2%; top:63%; width:18%; aspect-ratio:2.6; transform:rotate(-28deg)">
+        <svg viewBox="0 0 104 40" aria-hidden="true"><rect x="2" y="4" width="100" height="32" rx="16" fill="#29c6e0"/><path d="M80 4h6a16 16 0 0 1 0 32h-6z" fill="#ff8a2a"/><rect x="12" y="9" width="50" height="6" rx="3" fill="#fff" opacity="0.45"/></svg>
+      </span>
+      <span class="token" style="left:83%; top:80%; width:12%; aspect-ratio:1">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><g fill="#fff" stroke="rgba(30,20,60,0.10)"><ellipse cx="20" cy="9" rx="6" ry="9"/><ellipse cx="20" cy="31" rx="6" ry="9"/><ellipse cx="9" cy="20" rx="9" ry="6"/><ellipse cx="31" cy="20" rx="9" ry="6"/></g><circle cx="20" cy="20" r="5" fill="#ffd166"/></svg>
+      </span>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-feat">
+    <h3 id="t-feat">Qué vas a jugar</h3>
+    <div class="features">
+      <div class="feat">
+        <span class="sw" style="background:var(--ice)"><canvas width="12" height="14" id="ico-girl" style="width:24px;height:28px;image-rendering:pixelated"></canvas></span>
+        <h4>Un dedo, tres carriles</h4>
+        <p>Toca un carril o usa ↑ ↓. Se entiende en cinco segundos y cada partida dura menos de dos minutos.</p>
+      </div>
+      <div class="feat">
+        <span class="sw" style="background:var(--lavender)"><canvas width="12" height="12" id="ico-mon" style="width:24px;height:24px;image-rendering:pixelated"></canvas></span>
+        <h4>Riesgo y recompensa</h4>
+        <p>Las llaves aparecen en el carril del monstruo. Un golpe te saca una vida; un corazón te la devuelve.</p>
+      </div>
+      <div class="feat">
+        <span class="sw" style="background:#ffd9cf"><canvas width="12" height="11" id="ico-rab" style="width:24px;height:22px;image-rendering:pixelated"></canvas></span>
+        <h4>Dos escenarios</h4>
+        <p>La juguetería a pleno color y una calle de adoquines que se va oscureciendo mientras juegas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="niveles" aria-labelledby="t-lv">
+    <h3 id="t-lv">Los niveles</h3>
+    <div class="levels">
+      <article class="level">
+        <canvas id="lv1" width="160" height="90" aria-label="Nivel 1: la juguetería"></canvas>
+        <span class="tag">NIVEL 1</span>
+        <h4>La juguetería</h4>
+        <p>Piso de baldosas, estantes con ositos y pelotas. Junta 3 llaves y la puerta se abre.</p>
+      </article>
+      <article class="level">
+        <canvas id="lv2" width="160" height="90" aria-label="Nivel 2: la calle al atardecer"></canvas>
+        <span class="tag">NIVEL 2</span>
+        <h4>La calle al atardecer</h4>
+        <p>Adoquines oscuros, ventanas y faroles que se encienden. Más rápido: 5 llaves para liberar al conejo.</p>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-facts">
+    <h3 id="t-facts">Ficha</h3>
+    <div class="facts">
+      <span>Género: arcade de carriles</span>
+      <span>Plataforma: PC (Windows)</span>
+      <span>Motor: Unity 2D</span>
+      <span>Estado: prototipo</span>
+      <span>Jugadores: 1</span>
+    </div>
+  </section>
+
+  <footer>
+    <span>Rescate del Conejo · prototipo de estudiante hecho en Unity 2D</span>
+    <span>tusitio.com · PC · Demo</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // Los mismos sprites pixel de la demo, dibujados en canvas.
+  const PAL = { h:'#6b3a1f', s:'#ffd1a8', e:'#2b1a3a', m:'#ff8fa3', p:'#ff6fb5', l:'#ffd1a8', k:'#3b2a5a', b:'#4a7dff', d:'#1b2a66', w:'#ffffff', y:'#ffd23f', o:'#a37a00', r:'#ff4d6d', W:'#f4f4f4', P:'#ffb3c7', D:'#2b1a3a' };
+  const GIRL = ['...hhhhhh...','..hhhhhhhh..','..hssssssh..','..hsesseshh.','..hssssssh..','...ssmmss...','....pppp....','..spppppps..','..spppppps..','...pppppp...','..pppppppp..','..ll....ll..','..ll....ll..','.kkk....kkk.'];
+  const MON = ['..b......b..','..bb....bb..','..bbbbbbbb..','.bbbbbbbbbb.','.bwwbbbbwwb.','.bwdbbbbwdb.','.bbbbbbbbbb.','.bdwdwdwdwb.','.bbbbbbbbbb.','.bbbbbbbbbb.','..bb.bb.bb..','..bb.bb.bb..'];
+  const RAB = ['...WW..WW...','...WP..PW...','...WP..PW...','...WW..WW...','..WWWWWWWW..','.WWDWWWWDWW.','.WWWWPPWWWW.','.WWWWWWWWWW.','..WWWWWWWW..','..WWWWWWWW..','...WW..WW...'];
+  const KEY = ['.yyy......','yo.oy.....','y...yyyyyy','yo.oy..y.y','.yyy...y.y'];
+  const HEART = ['.rr...rr.','rWrr.rrrr','rWrrrrrrr','rrrrrrrrr','.rrrrrrr.','..rrrrr..','...rrr...','....r....'];
+
+  function draw(ctx, rows, x, y) {
+    rows.forEach((row, j) => [...row].forEach((c, i) => { if (c !== '.') { ctx.fillStyle = PAL[c]; ctx.fillRect(x + i, y + j, 1, 1); } }));
+  }
+  function icon(id, rows) { const c = document.getElementById(id); if (c) draw(c.getContext('2d'), rows, 0, 0); }
+  icon('ico-girl', GIRL); icon('ico-mon', MON); icon('ico-rab', RAB);
+
+  function toyStore(ctx) {
+    for (let y = 12; y < 78; y += 4) for (let x = 0; x < 160; x += 4) {
+      ctx.fillStyle = ((x + y) / 4) % 2 ? '#eeb0bd' : '#f6dcc4'; ctx.fillRect(x, y, 4, 4);
+    }
+    ctx.fillStyle = '#8a4b3a'; ctx.fillRect(0, 0, 160, 12);
+    ctx.fillStyle = '#5e3022'; ctx.fillRect(0, 9, 160, 2);
+    ['#ff4d6d', '#ffd23f', '#5a86ff', '#4cd964', '#c86bff'].forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(8 + i * 30, 3, 6, 6); });
+    ctx.fillStyle = '#6b3a28'; ctx.fillRect(0, 78, 160, 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0, 34, 160, 1); ctx.fillRect(0, 56, 160, 1);
+    ctx.fillStyle = '#a0623f'; ctx.fillRect(140, 26, 16, 38);
+    draw(ctx, GIRL, 14, 38); draw(ctx, MON, 92, 16); draw(ctx, KEY, 70, 66); draw(ctx, HEART, 118, 64); draw(ctx, RAB, 142, 40);
+    ctx.fillStyle = '#9aa0b5'; for (let x = 140; x <= 156; x += 4) ctx.fillRect(x, 37, 1, 16);
+  }
+  function street(ctx) {
+    for (let y = 12; y < 78; y++) for (let x = 0; x < 160; x++) {
+      const row = y >> 2, lx = (x + (row % 2) * 2) % 4, ly = y % 4;
+      const sh = 62 + (((x + (row % 2) * 2) >> 2) * 7 + row * 13) * 37 % 26;
+      ctx.fillStyle = (lx === 0 || ly === 0) ? '#1c1b24' : `rgb(${sh + 6},${sh},${sh + 10})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+    const air = ctx.createLinearGradient(0, 12, 0, 78);
+    air.addColorStop(0, 'rgba(255,120,60,0.4)'); air.addColorStop(1, 'rgba(20,8,40,0.45)');
+    ctx.fillStyle = air; ctx.fillRect(0, 12, 160, 66);
+    const sky = ctx.createLinearGradient(0, 0, 0, 12);
+    sky.addColorStop(0, '#5c286e'); sky.addColorStop(1, '#ff8c46');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 160, 12);
+    ctx.fillStyle = '#ffc85a'; ctx.beginPath(); ctx.arc(126, 12, 5, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#17141f'; [[0, 7], [14, 5], [26, 9], [44, 6], [58, 8], [80, 5], [96, 9], [140, 7]].forEach(([x, h]) => ctx.fillRect(x, 12 - h, 12, h));
+    ctx.fillStyle = '#ffcf6b'; [[3, 8], [17, 9], [29, 6], [47, 9], [61, 7], [99, 6], [143, 8]].forEach(([x, y]) => ctx.fillRect(x, y, 1, 1));
+    ctx.fillStyle = '#16151c'; ctx.fillRect(0, 78, 160, 12);
+    draw(ctx, GIRL, 14, 38); draw(ctx, MON, 80, 60); draw(ctx, MON, 110, 16); draw(ctx, KEY, 66, 22); draw(ctx, RAB, 142, 40);
+    ctx.fillStyle = '#9aa0b5'; for (let x = 140; x <= 156; x += 4) ctx.fillRect(x, 37, 1, 16);
+  }
+  [['shot-doc', toyStore], ['lv1', toyStore], ['lv2', street]].forEach(([id, fn]) => {
+    const c = document.getElementById(id); if (c) fn(c.getContext('2d'));
+  });
+})();
+</script>
+
+</html>

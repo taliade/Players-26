@@ -2,7 +2,7 @@
 
 Scripts y guía para armar el MVP de la Pre-Entrega. El diseño está en [`GDD.md`](GDD.md).
 **Si es tu primera vez con Unity, empieza por [`GUIA.md`](GUIA.md)**: paso a paso, glosario y modos de juego.
-Para probar la mecánica sin Unity, abre [`demo/index.html`](demo/index.html) en el navegador (las mismas reglas, arte y sonido de prueba).
+Para probar la mecánica sin Unity, abre [`demo/index.html`](demo/index.html) en el navegador (las mismas reglas, arte y sonido de prueba). La página de promoción está en [`promo/index.html`](promo/index.html).
 
 > El proyecto Unity se crea en tu PC. Este repo trae los scripts: copia `Assets/Scripts` dentro de la carpeta `Assets` de tu proyecto.
 
